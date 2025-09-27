@@ -16,7 +16,7 @@ namespace SQLMultiScript.UI
         private SplitContainer splitCenterRight;
         private SplitContainer splitResultFooter;
 
-        private ListBox listScripts;
+        private CheckedListBox listScripts;
         private Scintilla sqlEditor;
         private TextBox logBox;
 
@@ -40,35 +40,40 @@ namespace SQLMultiScript.UI
         {
             //Form
             Text = "SQL MultiScript (by penihel@gmail.com)";
-            WindowState = FormWindowState.Maximized;
-            
+            WindowState = FormWindowState.Maximized;            
             this.Load += MainForm_Load;
+           
+           
 
-            var height20 = (int)Math.Ceiling(Height * 0.8);
 
-
-            // Split esquerda / resto
+            // Split principal (top and bottom)
             splitMain = new SplitContainer();
             splitMain.Dock = DockStyle.Fill;
             splitMain.Orientation = Orientation.Horizontal;
-            splitMain.SplitterDistance = height20;
+            splitMain.SplitterDistance = 800;
+            splitMain.BorderStyle = UIConstants.SplitterBorderStyle;
+            splitMain.SplitterWidth = UIConstants.SplitterWidth;
             Controls.Add(splitMain);
             splitMain.BringToFront(); // não deixar o MenuStrip escondido
 
 
-            // Split centro / direita+footer
+            // Split esquerda
             splitLeft = new SplitContainer();
             splitLeft.Dock = DockStyle.Fill;
             splitLeft.Orientation = Orientation.Vertical;
-            splitLeft.SplitterDistance = 600;
+            splitLeft.SplitterDistance = 10;
+            splitLeft.BorderStyle = UIConstants.SplitterBorderStyle;
+            splitLeft.SplitterWidth = UIConstants.SplitterWidth;
             splitMain.Panel1.Controls.Add(splitLeft);
 
 
-            // Split centro / direita+footer
+            // Split centro / direita
             splitCenterRight = new SplitContainer();
             splitCenterRight.Dock = DockStyle.Fill;
             splitCenterRight.Orientation = Orientation.Vertical;
             splitCenterRight.SplitterDistance = 600;
+            splitCenterRight.BorderStyle = UIConstants.SplitterBorderStyle;
+            splitCenterRight.SplitterWidth = UIConstants.SplitterWidth;
             splitLeft.Panel2.Controls.Add(splitCenterRight);
 
             // Editor SQL (centro)
@@ -78,33 +83,40 @@ namespace SQLMultiScript.UI
 
             // Split direita / footer
             splitResultFooter = new SplitContainer();
-            splitResultFooter.Dock = DockStyle.Bottom;
+            splitResultFooter.Dock = DockStyle.Fill;
             splitResultFooter.Orientation = Orientation.Horizontal;
             splitResultFooter.SplitterDistance = 300;
-            Controls.Add(splitResultFooter);
-            splitResultFooter.BringToFront();
+            splitResultFooter.BorderStyle = UIConstants.SplitterBorderStyle;
+            splitResultFooter.SplitterWidth = UIConstants.SplitterWidth;
+            splitMain.Panel2.Controls.Add(splitResultFooter);
+            
 
             // Placeholder na direita (ex: conexões)
             var rightPanel = new Panel();
             rightPanel.Dock = DockStyle.Fill;
             rightPanel.BackColor = Color.Beige;
+            rightPanel.Controls.Add(new Label() { Text = "Painel Direito (ex: conexões)", Dock = DockStyle.Top });
             splitCenterRight.Panel2.Controls.Add(rightPanel);
 
 
 
-            // Placeholder na direita (ex: conexões)
+            
             var resultPanel = new Panel();
             resultPanel.Dock = DockStyle.Fill;
             resultPanel.BackColor = Color.Beige;
+            resultPanel.Controls.Add(new Label() { Text = "Painel de Resultados ", Dock = DockStyle.Top });
             splitResultFooter.Panel1.Controls.Add(resultPanel);
 
             logBox = new TextBox();
-            logBox.Dock = DockStyle.Bottom;
+            logBox.Dock = DockStyle.Fill;
             logBox.Multiline = true;
             logBox.ScrollBars = ScrollBars.Vertical;
-            logBox.Height = 150; // altura fixa do footer
+            
+            splitResultFooter.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;  // dá um relevo no splitter
+            splitResultFooter.SplitterWidth = 6;                  // aumenta a área visível do splitter
             splitResultFooter.Panel2.Controls.Add(logBox);
-            logBox.BringToFront();
+
+
 
         }
 
