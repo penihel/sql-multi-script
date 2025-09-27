@@ -56,7 +56,7 @@ namespace SQLMultiScript.UI
 
                 
 
-                Application.Run(new MainForm(applicationStateService));
+                Application.Run(new MainForm(_logger, applicationStateService));
             }
 
 
