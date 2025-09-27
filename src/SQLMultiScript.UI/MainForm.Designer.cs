@@ -35,13 +35,22 @@
             ColumnScriptName = new DataGridViewTextBoxColumn();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             button2 = new Button();
-            button3 = new Button();
+            splitContainer1 = new SplitContainer();
+            panel2 = new Panel();
+            panel1 = new Panel();
+            tableLayoutPanel1 = new TableLayoutPanel();
             ((System.ComponentModel.ISupportInitialize)dataGridViewScripts).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
+            splitContainer1.Panel1.SuspendLayout();
+            splitContainer1.SuspendLayout();
+            panel2.SuspendLayout();
+            panel1.SuspendLayout();
+            tableLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
             // button1
             // 
-            button1.Location = new Point(12, 119);
+            button1.Location = new Point(3, 3);
             button1.Name = "button1";
             button1.Size = new Size(94, 29);
             button1.TabIndex = 1;
@@ -54,12 +63,13 @@
             dataGridViewScripts.AllowUserToDeleteRows = false;
             dataGridViewScripts.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridViewScripts.Columns.AddRange(new DataGridViewColumn[] { ColumnCheckbox, ColumnOrder, ColumnScriptName });
-            dataGridViewScripts.Location = new Point(12, 154);
+            dataGridViewScripts.Dock = DockStyle.Fill;
+            dataGridViewScripts.Location = new Point(0, 0);
             dataGridViewScripts.Name = "dataGridViewScripts";
             dataGridViewScripts.RowHeadersVisible = false;
             dataGridViewScripts.RowHeadersWidth = 51;
             dataGridViewScripts.ShowEditingIcon = false;
-            dataGridViewScripts.Size = new Size(776, 122);
+            dataGridViewScripts.Size = new Size(357, 410);
             dataGridViewScripts.TabIndex = 3;
             // 
             // ColumnCheckbox
@@ -93,36 +103,79 @@
             // 
             // button2
             // 
-            button2.Location = new Point(112, 119);
+            button2.Location = new Point(189, 0);
             button2.Name = "button2";
             button2.Size = new Size(168, 29);
             button2.TabIndex = 4;
             button2.Text = "Add Existing";
             button2.UseVisualStyleBackColor = true;
             // 
-            // button3
+            // splitContainer1
             // 
-            button3.Location = new Point(312, 24);
-            button3.Name = "button3";
-            button3.Size = new Size(293, 93);
-            button3.TabIndex = 5;
-            button3.Text = "EXECUTE";
-            button3.UseVisualStyleBackColor = true;
+            splitContainer1.Dock = DockStyle.Fill;
+            splitContainer1.Location = new Point(3, 32);
+            splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            splitContainer1.Panel1.Controls.Add(panel2);
+            splitContainer1.Panel1.Controls.Add(panel1);
+            splitContainer1.Size = new Size(1071, 465);
+            splitContainer1.SplitterDistance = 357;
+            splitContainer1.TabIndex = 6;
+            // 
+            // panel2
+            // 
+            panel2.Controls.Add(dataGridViewScripts);
+            panel2.Dock = DockStyle.Fill;
+            panel2.Location = new Point(0, 55);
+            panel2.Name = "panel2";
+            panel2.Size = new Size(357, 410);
+            panel2.TabIndex = 6;
+            // 
+            // panel1
+            // 
+            panel1.Controls.Add(button1);
+            panel1.Controls.Add(button2);
+            panel1.Dock = DockStyle.Top;
+            panel1.Location = new Point(0, 0);
+            panel1.Name = "panel1";
+            panel1.Size = new Size(357, 55);
+            panel1.TabIndex = 5;
+            // 
+            // tableLayoutPanel1
+            // 
+            tableLayoutPanel1.ColumnCount = 2;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 78.61314F));
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 21.3868618F));
+            tableLayoutPanel1.Controls.Add(splitContainer1, 0, 1);
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Location = new Point(0, 0);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            tableLayoutPanel1.RowCount = 3;
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 5F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 80F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 15F));
+            tableLayoutPanel1.Size = new Size(1370, 589);
+            tableLayoutPanel1.TabIndex = 7;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
-            Controls.Add(button3);
-            Controls.Add(button2);
-            Controls.Add(dataGridViewScripts);
-            Controls.Add(button1);
+            ClientSize = new Size(1370, 589);
+            Controls.Add(tableLayoutPanel1);
             Name = "MainForm";
             Text = "Form1";
             WindowState = FormWindowState.Maximized;
             Load += MainForm_Load;
             ((System.ComponentModel.ISupportInitialize)dataGridViewScripts).EndInit();
+            splitContainer1.Panel1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
+            splitContainer1.ResumeLayout(false);
+            panel2.ResumeLayout(false);
+            panel1.ResumeLayout(false);
+            tableLayoutPanel1.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -135,6 +188,9 @@
         private DataGridViewTextBoxColumn ColumnOrder;
         private DataGridViewTextBoxColumn ColumnScriptName;
         private Button button2;
-        private Button button3;
+        private SplitContainer splitContainer1;
+        private TableLayoutPanel tableLayoutPanel1;
+        private Panel panel1;
+        private Panel panel2;
     }
 }
