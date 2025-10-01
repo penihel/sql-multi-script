@@ -1,7 +1,11 @@
 ﻿
 using Microsoft.Extensions.Logging;
 using ScintillaNET;
+using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
+using SQLMultiScript.Core.Models;
+using System.Windows.Forms;
+using static ScintillaNET.Style;
 
 namespace SQLMultiScript.UI
 {
@@ -10,19 +14,22 @@ namespace SQLMultiScript.UI
         private readonly IApplicationStateService _applicationStateService;
         private readonly ILogger _logger;
 
+        
+        private ApplicationState _currentAppState = new ApplicationState();
         //Componentes
         private SplitContainer splitMain;
         private SplitContainer splitLeft;
         private SplitContainer splitCenterRight;
         private SplitContainer splitResultFooter;
 
-        private CheckedListBox listScripts;
+
         private Scintilla sqlEditor;
         private TextBox logBox;
 
         private MenuStrip menuStrip;
         private ToolStripMenuItem executarMenu;
 
+        private CheckedListBox checkededListboxStriptsToExecute;
         public MainForm(
             ILogger logger,
             IApplicationStateService applicationStateService)
@@ -40,10 +47,10 @@ namespace SQLMultiScript.UI
         {
             //Form
             Text = "SQL MultiScript (by penihel@gmail.com)";
-            WindowState = FormWindowState.Maximized;            
+            WindowState = FormWindowState.Maximized;
             this.Load += MainForm_Load;
-           
-           
+
+
 
 
             // Split principal (top and bottom)
@@ -67,6 +74,8 @@ namespace SQLMultiScript.UI
             splitMain.Panel1.Controls.Add(splitLeft);
 
 
+            InitializeScriptsToExecuteList(splitLeft.Panel1);
+
             // Split centro / direita
             splitCenterRight = new SplitContainer();
             splitCenterRight.Dock = DockStyle.Fill;
@@ -89,7 +98,7 @@ namespace SQLMultiScript.UI
             splitResultFooter.BorderStyle = UIConstants.SplitterBorderStyle;
             splitResultFooter.SplitterWidth = UIConstants.SplitterWidth;
             splitMain.Panel2.Controls.Add(splitResultFooter);
-            
+
 
             // Placeholder na direita (ex: conexões)
             var rightPanel = new Panel();
@@ -100,7 +109,7 @@ namespace SQLMultiScript.UI
 
 
 
-            
+
             var resultPanel = new Panel();
             resultPanel.Dock = DockStyle.Fill;
             resultPanel.BackColor = Color.Beige;
@@ -111,13 +120,76 @@ namespace SQLMultiScript.UI
             logBox.Dock = DockStyle.Fill;
             logBox.Multiline = true;
             logBox.ScrollBars = ScrollBars.Vertical;
-            
+
             splitResultFooter.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;  // dá um relevo no splitter
             splitResultFooter.SplitterWidth = 6;                  // aumenta a área visível do splitter
             splitResultFooter.Panel2.Controls.Add(logBox);
 
 
 
+        }
+
+        private void InitializeScriptsToExecuteList(Panel parentPanel)
+        {
+            var checklistPanel = new Panel()
+            {
+                Dock = DockStyle.Fill,
+            };
+
+            checkededListboxStriptsToExecute = new CheckedListBox()
+            {
+                Dock = DockStyle.Fill,
+            };
+
+            checkededListboxStriptsToExecute.Click += checkededListboxStriptsToExecute_Click;
+
+
+
+            checklistPanel.Controls.Add(checkededListboxStriptsToExecute);
+            parentPanel.Controls.Add(checklistPanel);
+
+            var buttonPanel = new Panel()
+            {
+                Dock = DockStyle.Top,
+                Height = 30
+                
+            };
+
+            var btnAdd = new Button()
+            {
+                Text = "Add Existing",
+                Dock = DockStyle.Right
+            };
+
+            var btnNew = new Button()
+            {
+                Text = "New",
+                Dock = DockStyle.Left
+                
+            };
+
+            btnNew.Click+= btnNew_Click;
+
+            buttonPanel.Controls.Add(btnAdd);
+            buttonPanel.Controls.Add(btnNew);
+            parentPanel.Controls.Add(buttonPanel);
+        }
+
+        private async void btnNew_Click(object sender, EventArgs e)
+        {
+
+
+
+            await _currentAppState.NewScript();
+
+            LoadUIWithAppState();
+        }
+
+        private void checkededListboxStriptsToExecute_Click(object sender, EventArgs e)
+        {
+            var x = checkededListboxStriptsToExecute.SelectedItem;
+
+            sqlEditor.Text = File.ReadAllText(((Script)x).FilePath);
         }
 
         private void InitializeMenu()
@@ -163,9 +235,38 @@ namespace SQLMultiScript.UI
             // Exemplo inicial
             sqlEditor.Text = "SELECT * FROM Users WHERE Active = 1;";
         }
-        private void MainForm_Load(object sender, EventArgs e)
+        private async void MainForm_Load(object sender, EventArgs e)
         {
-            //throw new NotImplementedException();
+            //Aqui é a pasta atual do projeto atual
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+            var folder = Path.Combine(appData, Constants.ApplicationName);
+
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+
+            var filePath = Path.Combine(folder, Constants.ApplicationStateFileName);
+
+
+            _currentAppState = await _applicationStateService.LoadAsync(filePath);
+
+            LoadUIWithAppState();
+        }
+
+        private void LoadUIWithAppState()
+        {
+            
+            checkededListboxStriptsToExecute.Items.Clear();
+
+            foreach (var item in _currentAppState.ScriptsToExecute)
+            {
+                int index = checkededListboxStriptsToExecute.Items.Add(item);
+
+                checkededListboxStriptsToExecute.SetItemChecked(index, item.Selected);
+
+            }
         }
 
         private void ExecutarMenu_Click(object sender, EventArgs e)

@@ -4,6 +4,6 @@ namespace SQLMultiScript.Core.Interfaces
 {
     public interface IApplicationStateService
     {
-        Task<ApplicationState> LoadAsync();
+        Task<ApplicationState> LoadAsync(string filePath);
     }
 }
