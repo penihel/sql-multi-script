@@ -113,14 +113,19 @@ namespace SQLMultiScript.UI
                 ColumnHeadersVisible = true,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                AllowDrop = false,
+                AllowUserToOrderColumns = false,
+                AllowUserToResizeColumns = false, 
+                AllowUserToResizeRows = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                
             };
 
             // Checkbox
             var colSelected = new DataGridViewCheckBoxColumn
             {
                 DataPropertyName = "Selected",
-                Width = 60
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
             };
             dataGridViewScripts.Columns.Add(colSelected);
 
@@ -141,7 +146,11 @@ namespace SQLMultiScript.UI
             // -----------------------
             // Painel do grid
             // -----------------------
-            var listPanel = new Panel { Dock = DockStyle.Fill };
+            var listPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(UIConstants.PanelPadding)
+            };
 
             listPanel.Controls.Add(dataGridViewScripts);
 
@@ -160,11 +169,11 @@ namespace SQLMultiScript.UI
 
             btnAdd = new Button
             {
-                Text = "Add Existing",
+                Text = Resources.Strings.AddExisting,
                 Dock = DockStyle.Right,
-                Image = Resources.Images.ic_fluent_add_24_regular,
+                Image = Images.ic_fluent_add_24_regular,
                 ImageAlign = ContentAlignment.MiddleLeft,
-                Width = 150
+                Width = 200
 
             };
             btnAdd.Click += BtnAdd_Click;
@@ -172,8 +181,9 @@ namespace SQLMultiScript.UI
 
             btnNew = new Button
             {
-                Text = "New",
-                Dock = DockStyle.Left
+                Text = Resources.Strings.New,
+                Dock = DockStyle.Left,
+                Width = 100
             };
             btnNew.Click += BtnNew_Click;
             buttonPanel.Controls.Add(btnNew);
@@ -191,7 +201,7 @@ namespace SQLMultiScript.UI
             // -------------------------------
             // Menu File
             // -------------------------------
-            var fileMenu = new ToolStripMenuItem("File");
+            var fileMenu = new ToolStripMenuItem(Resources.Strings.File);
 
             var newProjectItem = new ToolStripMenuItem("New Project");
             newProjectItem.Click += NewProjectItem_Click;

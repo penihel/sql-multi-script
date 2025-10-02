@@ -17,11 +17,12 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\SQLMultiScript.Core\SQLMultiScript.Core.csproj" />
+	  <ProjectReference Include="..\SQLMultiScript.Resources\SQLMultiScript.Resources.csproj" />
 	  <ProjectReference Include="..\SQLMultiScript.Services\SQLMultiScript.Services.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Resources\Images.Designer.cs">
+	  <Compile Update="Images.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>Images.resx</DependentUpon>
@@ -29,7 +30,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Update="Resources\Images.resx">
+	  <EmbeddedResource Update="Images.resx">
 	    <Generator>ResXFileCodeGenerator</Generator>
 	    <LastGenOutput>Images.Designer.cs</LastGenOutput>
 	  </EmbeddedResource>

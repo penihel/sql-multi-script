@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLMultiScript.UI", "SQLMul
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLMultiScript.Services", "SQLMultiScript.Services\SQLMultiScript.Services.csproj", "{89100B1D-E307-4D8B-9FE2-226B94CE0008}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLMultiScript.Resources", "SQLMultiScript.Resources\SQLMultiScript.Resources.csproj", "{F98117FE-7AD9-4F5B-9F19-65C92C790A2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{89100B1D-E307-4D8B-9FE2-226B94CE0008}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{89100B1D-E307-4D8B-9FE2-226B94CE0008}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{89100B1D-E307-4D8B-9FE2-226B94CE0008}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F98117FE-7AD9-4F5B-9F19-65C92C790A2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F98117FE-7AD9-4F5B-9F19-65C92C790A2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F98117FE-7AD9-4F5B-9F19-65C92C790A2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F98117FE-7AD9-4F5B-9F19-65C92C790A2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace SQLMultiScript.UI.Resources {
+namespace SQLMultiScript.UI {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace SQLMultiScript.UI.Resources {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("SQLMultiScript.UI.Resources.Images", typeof(Images).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("SQLMultiScript.UI.Images", typeof(Images).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
