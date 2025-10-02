@@ -1,21 +1,19 @@
 ﻿
 using Microsoft.Extensions.Logging;
 using ScintillaNET;
-using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
-using System.Windows.Forms;
-using static ScintillaNET.Style;
 
 namespace SQLMultiScript.UI
 {
     public class MainForm : Form
     {
-        private readonly IApplicationStateService _applicationStateService;
+        private readonly IProjectService _projectService;
         private readonly ILogger _logger;
 
-        
-        private ApplicationState _currentAppState = new ApplicationState();
+
+        private Project _currentProject;// = new Project();
+
         //Componentes
         private SplitContainer splitMain;
         private SplitContainer splitLeft;
@@ -29,12 +27,12 @@ namespace SQLMultiScript.UI
         private MenuStrip menuStrip;
         private ToolStripMenuItem executarMenu;
 
-        private CheckedListBox checkededListboxStriptsToExecute;
+        private DataGridView dataGridViewScripts;
         public MainForm(
             ILogger logger,
-            IApplicationStateService applicationStateService)
+            IProjectService projectService)
         {
-            _applicationStateService = applicationStateService;
+            _projectService = projectService;
             _logger = logger;
 
             InitializeLayout();
@@ -74,7 +72,7 @@ namespace SQLMultiScript.UI
             splitMain.Panel1.Controls.Add(splitLeft);
 
 
-            InitializeScriptsToExecuteList(splitLeft.Panel1);
+
 
             // Split centro / direita
             splitCenterRight = new SplitContainer();
@@ -129,30 +127,56 @@ namespace SQLMultiScript.UI
 
         }
 
-        private void InitializeScriptsToExecuteList(Panel parentPanel)
+        private void SetupScriptsPanel(Panel parentPanel)
         {
-            var checklistPanel = new Panel()
+            var listPanel = new Panel()
             {
                 Dock = DockStyle.Fill,
             };
 
-            checkededListboxStriptsToExecute = new CheckedListBox()
+            dataGridViewScripts = new DataGridView()
             {
                 Dock = DockStyle.Fill,
             };
 
-            checkededListboxStriptsToExecute.Click += checkededListboxStriptsToExecute_Click;
+            // Faz o binding
+            dataGridViewScripts.AutoGenerateColumns = false; // cria colunas sozinho
+
+            // Coluna Checkbox (Selected)
+            var colSelected = new DataGridViewCheckBoxColumn
+            {
+                DataPropertyName = "Selected", // propriedade do objeto
+                //HeaderText = "Selected?",
+                Width = 60
+            };
+            dataGridViewScripts.Columns.Add(colSelected);
+
+            // Coluna Texto (DisplayName)
+            var colDisplayName = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "DisplayName",
+                HeaderText = "Script",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                ReadOnly = true
+            };
+            dataGridViewScripts.Columns.Add(colDisplayName);
+            dataGridViewScripts.CellDoubleClick += DataGridViewScripts_CellDoubleClick;
+            dataGridViewScripts.RowHeadersVisible = false;
+            dataGridViewScripts.AllowUserToAddRows = false;
+            dataGridViewScripts.AllowUserToDeleteRows = false;
 
 
 
-            checklistPanel.Controls.Add(checkededListboxStriptsToExecute);
-            parentPanel.Controls.Add(checklistPanel);
+
+
+            listPanel.Controls.Add(dataGridViewScripts);
+            parentPanel.Controls.Add(listPanel);
 
             var buttonPanel = new Panel()
             {
                 Dock = DockStyle.Top,
                 Height = 30
-                
+
             };
 
             var btnAdd = new Button()
@@ -161,36 +185,84 @@ namespace SQLMultiScript.UI
                 Dock = DockStyle.Right
             };
 
+            btnAdd.Click += btnAdd_Click;
+
             var btnNew = new Button()
             {
                 Text = "New",
                 Dock = DockStyle.Left
-                
+
             };
 
-            btnNew.Click+= btnNew_Click;
+            btnNew.Click += btnNew_Click;
 
             buttonPanel.Controls.Add(btnAdd);
             buttonPanel.Controls.Add(btnNew);
             parentPanel.Controls.Add(buttonPanel);
         }
 
-        private async void btnNew_Click(object sender, EventArgs e)
+        private void DataGridViewScripts_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                // Recupera o objeto Script vinculado à linha
+                var script = (Script)dataGridViewScripts.Rows[e.RowIndex].DataBoundItem;
 
-
-
-            await _currentAppState.NewScript();
-
-            LoadUIWithAppState();
+                if (script != null && File.Exists(script.FilePath))
+                {
+                    try
+                    {
+                        string sql = File.ReadAllText(script.FilePath);
+                        sqlEditor.Text = sql; // carrega no editor
+                        Log($"Script carregado: {script.FilePath}\r\n");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Não foi possível carregar {script.FilePath}: {ex.Message}\r\n", true);
+                    }
+                }
+            }
         }
 
-        private void checkededListboxStriptsToExecute_Click(object sender, EventArgs e)
-        {
-            var x = checkededListboxStriptsToExecute.SelectedItem;
 
-            sqlEditor.Text = File.ReadAllText(((Script)x).FilePath);
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+
+            using var ofd = new OpenFileDialog();
+            ofd.Filter = "SQL Files (*.sql)|*.sql|All Files (*.*)|*.*";
+            ofd.Multiselect = true;
+
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                foreach (var file in ofd.FileNames)
+                {
+                    _currentProject.Scripts.Add(new Script
+                    {
+                        FilePath = file,
+                        DisplayName = Path.GetFileName(file),
+                        Selected = true
+                    });
+
+                    Log($"Script adicionado: {file}");
+                }
+            }
+
+
         }
+        private void btnNew_Click(object sender, EventArgs e)
+        {
+
+            if (_currentProject != null)
+            {
+                _currentProject.Scripts.Add(new Script()
+                {
+                    DisplayName = $"Script{_currentProject.Scripts.Count + 1}.sql",
+                });
+            }
+
+
+        }
+
 
         private void InitializeMenu()
         {
@@ -232,41 +304,38 @@ namespace SQLMultiScript.UI
             sqlEditor.CaretLineVisible = true;
             sqlEditor.CaretLineBackColor = Color.LightYellow;
 
+            
+            sqlEditor.LexerLanguage = "mssql";
             // Exemplo inicial
             sqlEditor.Text = "SELECT * FROM Users WHERE Active = 1;";
         }
         private async void MainForm_Load(object sender, EventArgs e)
         {
-            //Aqui é a pasta atual do projeto atual
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            ////Aqui é a pasta atual do projeto atual
+            //var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-            var folder = Path.Combine(appData, Constants.ApplicationName);
+            //var folder = Path.Combine(appData, Constants.ApplicationName);
 
-            if (!Directory.Exists(folder))
-            {
-                Directory.CreateDirectory(folder);
-            }
+            //if (!Directory.Exists(folder))
+            //{
+            //    Directory.CreateDirectory(folder);
+            //}
 
-            var filePath = Path.Combine(folder, Constants.ApplicationStateFileName);
+            //var filePath = Path.Combine(folder, Constants.ApplicationStateFileName);
 
 
-            _currentAppState = await _applicationStateService.LoadAsync(filePath);
+            _currentProject = await _projectService.CreateNewAsync();
 
-            LoadUIWithAppState();
+
+
+            SetupScriptsPanel(splitLeft.Panel1);
+
+            BindData();
         }
 
-        private void LoadUIWithAppState()
+        private void BindData()
         {
-            
-            checkededListboxStriptsToExecute.Items.Clear();
-
-            foreach (var item in _currentAppState.ScriptsToExecute)
-            {
-                int index = checkededListboxStriptsToExecute.Items.Add(item);
-
-                checkededListboxStriptsToExecute.SetItemChecked(index, item.Selected);
-
-            }
+            dataGridViewScripts.DataSource = _currentProject.Scripts;
         }
 
         private void ExecutarMenu_Click(object sender, EventArgs e)
@@ -275,15 +344,29 @@ namespace SQLMultiScript.UI
 
             if (string.IsNullOrWhiteSpace(script))
             {
-                logBox.AppendText("[WARN] Script vazio, nada a executar.\r\n");
+                Log("Script vazio, nada a executar.\r\n");
                 return;
             }
 
             // 🔹 Aqui seria onde você chama seu mecanismo de execução de SQL
             // Exemplo de simulação:
-            logBox.AppendText($"[EXEC] Executando script às {DateTime.Now:T}\r\n");
-            logBox.AppendText(script + "\r\n");
-            logBox.AppendText("[SUCESSO] Script executado com sucesso!\r\n\r\n");
+            Log($"Executando script às {DateTime.Now:T}\r\n");
+            Log(script + "\r\n");
+            Log("script executado com sucesso!\r\n\r\n");
         }
+
+
+        private void Log(string message, bool isError = false)
+        {
+            string prefix = isError ? "[ERRO]" : "[INFO]";
+            logBox.AppendText($"[{DateTime.Now:G}] {prefix} {message}\r\n");
+
+            if (isError)
+                _logger.LogError(message);
+            else
+                _logger.LogInformation(message);
+        }
+
+
     }
 }

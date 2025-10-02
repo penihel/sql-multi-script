@@ -43,7 +43,7 @@ namespace SQLMultiScript.UI
 
 
             var services = new ServiceCollection();
-            services.AddSingleton<IApplicationStateService, ApplicationStateService>();
+            services.AddSingleton<IProjectService, ProjectService>();
 
 
             using (var provider = services.BuildServiceProvider())
@@ -52,7 +52,7 @@ namespace SQLMultiScript.UI
 
                 _logger.LogInformation("Aplicação iniciada");
 
-                var applicationStateService = provider.GetRequiredService<IApplicationStateService>();
+                var applicationStateService = provider.GetRequiredService<IProjectService>();
 
                 
 
