@@ -11,6 +11,7 @@ namespace SQLMultiScript.Core.Models
         [JsonIgnore]
         public string FilePath { get; set; }
         public string Version { get; set; }
+        public string DisplayName { get; set; }
         public BindingList<Script> Scripts { get; set; } = new BindingList<Script>();
 
 

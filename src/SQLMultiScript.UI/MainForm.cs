@@ -95,7 +95,9 @@ namespace SQLMultiScript.UI
             logBox = new TextBox { Dock = DockStyle.Fill, Multiline = true, ScrollBars = ScrollBars.Vertical };
             splitResultFooter.Panel2.Controls.Add(logBox);
 
-            SetupMenu();
+            //SetupMenu();
+
+            InitializeMenu();
         }
 
         private void SetupScriptsPanel(Panel parentPanel)
@@ -171,21 +173,64 @@ namespace SQLMultiScript.UI
             btnNew.Click += BtnNew_Click;
             buttonPanel.Controls.Add(btnNew);
 
-           
+
 
             parentPanel.Controls.Add(buttonPanel);  // botões por cima
 
         }
 
-        private void SetupMenu()
+        private void InitializeMenu()
         {
             menuStrip = new MenuStrip();
-            executarMenu = new ToolStripMenuItem("Executar Script");
-            executarMenu.Click += ExecutarMenu_Click;
-            menuStrip.Items.Add(executarMenu);
+
+            // -------------------------------
+            // Menu File
+            // -------------------------------
+            var fileMenu = new ToolStripMenuItem("File");
+
+            var newProjectItem = new ToolStripMenuItem("New Project");
+            newProjectItem.Click += NewProjectItem_Click;
+            fileMenu.DropDownItems.Add(newProjectItem);
+
+            var saveProjectItem = new ToolStripMenuItem("Save Project");
+            saveProjectItem.Click += SaveProjectItem_Click;
+            fileMenu.DropDownItems.Add(saveProjectItem);
+
+            var closeProjectItem = new ToolStripMenuItem("Close Project");
+            closeProjectItem.Click += CloseProjectItem_Click;
+            fileMenu.DropDownItems.Add(closeProjectItem);
+
+            fileMenu.DropDownItems.Add(new ToolStripSeparator()); // divisor
+
+            var exitItem = new ToolStripMenuItem("Exit");
+            exitItem.Click += ExitItem_Click;
+            fileMenu.DropDownItems.Add(exitItem);
+
+            menuStrip.Items.Add(fileMenu);
+
+            // -------------------------------
+            // Menu About
+            // -------------------------------
+            var aboutMenu = new ToolStripMenuItem("About");
+            aboutMenu.Click += AboutMenu_Click;
+            menuStrip.Items.Add(aboutMenu);
+
+            // -------------------------------
+            // Adiciona no form
+            // -------------------------------
             MainMenuStrip = menuStrip;
             Controls.Add(menuStrip);
         }
+
+        //private void SetupMenu()
+        //{
+        //    menuStrip = new MenuStrip();
+        //    executarMenu = new ToolStripMenuItem("Executar Script");
+        //    executarMenu.Click += ExecutarMenu_Click;
+        //    menuStrip.Items.Add(executarMenu);
+        //    MainMenuStrip = menuStrip;
+        //    Controls.Add(menuStrip);
+        //}
 
         private void SetupEditorPanel(Panel parentPanel)
         {
@@ -203,6 +248,8 @@ namespace SQLMultiScript.UI
             // Editor SQL (centro)
             sqlEditor = new Scintilla();
             sqlEditor.Dock = DockStyle.Fill;
+
+            sqlEditor.TextChanged += SqlEditor_TextChanged;
 
             sqlEditor.StyleResetDefault();
             sqlEditor.Styles[Style.Default].Font = "Consolas";
@@ -263,16 +310,58 @@ namespace SQLMultiScript.UI
 
         }
 
-        private async void MainForm_Load(object sender, EventArgs e)
+        private void SqlEditor_TextChanged(object sender, EventArgs e)
         {
+            if (_activeScript != null)
+            {
+                _activeScript.IsDirty = true;
+            }
+        }
+
+        private bool CheckUnsavedChanges()
+        {
+            if (_currentProject != null && _currentProject.Scripts.Where(s => s.IsDirty).Any())
+            {
+                var result = MessageBox.Show(
+                    "Existem scripts não salvos. Deseja continuar e perder essas alterações?",
+                    "Atenção",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+                return result == DialogResult.Yes;
+            }
+            return true;
+        }
+        private async Task NewProject()
+        {
+
+            if (!CheckUnsavedChanges())
+                return;
+
+            _activeScript = null;
+            sqlEditor.Text = string.Empty;
+
             _currentProject = await _projectService.CreateNewAsync();
 
+            if (_currentProject != null)
+            {
+                _activeScript = _currentProject.Scripts.FirstOrDefault();
+                sqlEditor.Text = _activeScript?.Content ?? string.Empty;
+            }
+
             BindData();
+        }
+
+        private async void MainForm_Load(object sender, EventArgs e)
+        {
+            await NewProject();
         }
 
         private void BindData()
         {
             dataGridViewScripts.DataSource = _currentProject.Scripts;
+
+            // Atualiza grid
+            dataGridViewScripts.Refresh();
         }
 
         private void BtnAdd_Click(object sender, EventArgs e)
@@ -307,36 +396,49 @@ namespace SQLMultiScript.UI
             // Atualiza conteúdo em memória
             _activeScript.Content = sqlEditor.Text;
 
+            SaveScript(_activeScript);
+
+            // Atualiza grid
+            dataGridViewScripts.Refresh();
+        }
+
+        private void SaveScript(Script script)
+        {
+
+
+
+
             // Se não tem caminho, pede ao usuário
-            if (string.IsNullOrEmpty(_activeScript.FilePath))
+            if (string.IsNullOrEmpty(script.FilePath))
             {
                 using var sfd = new SaveFileDialog
                 {
                     Filter = "SQL Files (*.sql)|*.sql|All Files (*.*)|*.*",
-                    FileName = _activeScript.DisplayName
+                    FileName = script.DisplayName
                 };
 
                 if (sfd.ShowDialog() != DialogResult.OK) return;
 
-                _activeScript.FilePath = sfd.FileName;
-                _activeScript.DisplayName = Path.GetFileName(sfd.FileName);
+                script.FilePath = sfd.FileName;
+                script.DisplayName = Path.GetFileName(sfd.FileName);
 
-                // Atualiza grid
-                dataGridViewScripts.Refresh();
+
             }
 
             try
             {
-                File.WriteAllText(_activeScript.FilePath, _activeScript.Content ?? string.Empty);
-                _activeScript.IsDirty = false;
-                Log($"Script salvo: {_activeScript.FilePath}");
+                File.WriteAllText(script.FilePath, script.Content ?? string.Empty);
+                script.IsDirty = false;
+
+                Log($"Script salvo: {script.FilePath}");
             }
             catch (Exception ex)
             {
-                Log($"Erro ao salvar {_activeScript.FilePath}: {ex.Message}", true);
+                Log($"Erro ao salvar {script.FilePath}: {ex.Message}", true);
             }
-        }
 
+
+        }
 
         private void DataGridViewScripts_CellClick(object sender, DataGridViewCellEventArgs e)
         {
@@ -396,6 +498,99 @@ namespace SQLMultiScript.UI
             Log(script);
             Log("Execução concluída com sucesso");
         }
+
+        private async void NewProjectItem_Click(object sender, EventArgs e)
+        {
+            // Lógica para criar um novo projeto
+            Log("[INFO] New Project clicado");
+            await NewProject();
+        }
+
+        private void SaveProjectItem_Click(object sender, EventArgs e)
+        {
+            // Lógica para salvar projeto atual
+            if (_activeScript != null)
+                // Atualiza conteúdo em memória
+                _activeScript.Content = sqlEditor.Text;
+
+            foreach (var script in _currentProject.Scripts.Where(s => s.IsDirty))
+            {
+                SaveScript(script);
+            }
+
+            SaveProject(_currentProject);
+
+        }
+
+        private void SaveProject(Project project)
+        {
+            // Se não tem caminho, pede ao usuário
+            if (string.IsNullOrEmpty(project.FilePath))
+            {
+                using var sfd = new SaveFileDialog
+                {
+                    Filter = "SQL Multi Script Project Files (*.smsjsonproj)|*.smsjsonproj",
+                    FileName = project.DisplayName ?? "NewProject.smsjsonproj"
+                };
+
+                if (sfd.ShowDialog() != DialogResult.OK) return;
+
+                project.FilePath = sfd.FileName;
+                project.DisplayName = Path.GetFileNameWithoutExtension(sfd.FileName);
+            }
+
+            try
+            {
+                var projectJson = System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                File.WriteAllText(project.FilePath, projectJson);
+
+                
+                Log($"Project save: {project.FilePath}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Erro ao salvar {project.FilePath}: {ex.Message}", true);
+            }
+
+            
+        }
+
+        private void CloseProjectItem_Click(object sender, EventArgs e)
+        {
+            // Lógica para fechar projeto atual
+            Log("[INFO] Close Project clicado");
+        }
+
+        private void ExitItem_Click(object sender, EventArgs e)
+        {
+            Close(); // fecha o form
+        }
+
+        private void AboutMenu_Click(object sender, EventArgs e)
+        {
+            // Exibe um formulário About simples
+            using var aboutForm = new Form
+            {
+                Text = "About",
+                Size = new Size(400, 200),
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            var lbl = new Label
+            {
+                Text = "SQL MultiScript\nby Penihel Roosewelt",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            aboutForm.Controls.Add(lbl);
+            aboutForm.ShowDialog(this);
+        }
+
 
         private void Log(string message, bool isError = false)
         {
