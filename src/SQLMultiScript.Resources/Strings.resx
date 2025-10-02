@@ -126,4 +126,7 @@
   <data name="New" xml:space="preserve">
     <value>New</value>
   </data>
+  <data name="RemoveSelectedRows" xml:space="preserve">
+    <value>Remove selected rows</value>
+  </data>
 </root>

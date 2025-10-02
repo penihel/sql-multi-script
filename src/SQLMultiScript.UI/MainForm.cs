@@ -3,6 +3,7 @@ using ScintillaNET;
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using System.Windows.Forms;
 
 namespace SQLMultiScript.UI
 {
@@ -115,10 +116,10 @@ namespace SQLMultiScript.UI
                 AllowUserToDeleteRows = false,
                 AllowDrop = false,
                 AllowUserToOrderColumns = false,
-                AllowUserToResizeColumns = false, 
+                AllowUserToResizeColumns = false,
                 AllowUserToResizeRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                
+
             };
 
             // Checkbox
@@ -142,6 +143,29 @@ namespace SQLMultiScript.UI
             dataGridViewScripts.CellClick += DataGridViewScripts_CellClick;
 
 
+            //Menu de contexto (botão direito) do grid
+
+            var contextMenu = new ContextMenuStrip();
+            var removeItem = new ToolStripMenuItem(Resources.Strings.RemoveSelectedRows);
+            removeItem.Click += ToolStripMenuItemRemove_Click;
+            removeItem.Image = Images.ic_fluent_delete_24_regular;
+            removeItem.ImageAlign = ContentAlignment.MiddleLeft;
+            removeItem.ShortcutKeys = Keys.Delete;
+            contextMenu.Items.Add(removeItem);
+
+            dataGridViewScripts.ContextMenuStrip = contextMenu;
+
+
+            //KeyDown no Grid
+            dataGridViewScripts.KeyDown += (s, e) =>
+            {
+                //TEntou deletar
+                if (e.KeyCode == Keys.Delete)
+                {
+                    e.Handled = true;
+                    RemoveScripts();
+                }
+            };
 
             // -----------------------
             // Painel do grid
@@ -194,6 +218,8 @@ namespace SQLMultiScript.UI
 
         }
 
+
+
         private void InitializeMenu()
         {
             menuStrip = new MenuStrip();
@@ -237,15 +263,7 @@ namespace SQLMultiScript.UI
             Controls.Add(menuStrip);
         }
 
-        //private void SetupMenu()
-        //{
-        //    menuStrip = new MenuStrip();
-        //    executarMenu = new ToolStripMenuItem("Executar Script");
-        //    executarMenu.Click += ExecutarMenu_Click;
-        //    menuStrip.Items.Add(executarMenu);
-        //    MainMenuStrip = menuStrip;
-        //    Controls.Add(menuStrip);
-        //}
+
 
         private void SetupEditorPanel(Panel parentPanel)
         {
@@ -544,7 +562,9 @@ namespace SQLMultiScript.UI
 
             _currentProject.Scripts.Add(new Script
             {
-                DisplayName = $"Script{_currentProject.Scripts.Count + 1}.sql"
+                DisplayName = $"Script{_currentProject.Scripts.Count + 1}.sql",
+                Order = _currentProject.Scripts.Count + 1,
+                Selected = true
             });
         }
 
@@ -674,6 +694,36 @@ namespace SQLMultiScript.UI
             aboutForm.ShowDialog(this);
         }
 
+        private void ToolStripMenuItemRemove_Click(object sender, EventArgs e)
+        {
+            RemoveScripts();
+
+        }
+
+        private void RemoveScripts()
+        {
+            if (dataGridViewScripts.SelectedRows.Count == 0)
+                return;
+
+            var confirm = MessageBox.Show(
+                $"Deseja realmente remover {dataGridViewScripts.SelectedRows.Count} linha(s)?",
+                "Confirmação",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirm == DialogResult.Yes)
+            {
+                foreach (DataGridViewRow row in dataGridViewScripts.SelectedRows)
+                {
+                    if (!row.IsNewRow) // previne tentar remover linha vazia
+                    {
+                        dataGridViewScripts.Rows.Remove(row);
+                    }
+                }
+            }
+
+
+        }
 
         private void Log(string message, bool isError = false)
         {

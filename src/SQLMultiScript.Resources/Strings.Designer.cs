@@ -86,5 +86,14 @@ namespace SQLMultiScript.Resources {
                 return ResourceManager.GetString("New", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Remove selected rows.
+        /// </summary>
+        public static string RemoveSelectedRows {
+            get {
+                return ResourceManager.GetString("RemoveSelectedRows", resourceCulture);
+            }
+        }
     }
 }
