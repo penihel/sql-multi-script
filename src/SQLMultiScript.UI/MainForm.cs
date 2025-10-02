@@ -30,7 +30,7 @@ namespace SQLMultiScript.UI
             _projectService = projectService;
 
             InitializeLayout();
-            
+
 
         }
 
@@ -132,7 +132,7 @@ namespace SQLMultiScript.UI
             };
             dataGridViewScripts.Columns.Add(colName);
 
-            dataGridViewScripts.CellDoubleClick += DataGridViewScripts_CellDoubleClick;
+            dataGridViewScripts.CellClick += DataGridViewScripts_CellClick;
 
 
 
@@ -171,13 +171,7 @@ namespace SQLMultiScript.UI
             btnNew.Click += BtnNew_Click;
             buttonPanel.Controls.Add(btnNew);
 
-            btnSave = new Button
-            {
-                Text = "Save",
-                Dock = DockStyle.Left
-            };
-            btnSave.Click += BtnSave_Click;
-            buttonPanel.Controls.Add(btnSave);
+           
 
             parentPanel.Controls.Add(buttonPanel);  // botões por cima
 
@@ -309,6 +303,28 @@ namespace SQLMultiScript.UI
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (_activeScript == null) return;
+
+            // Atualiza conteúdo em memória
+            _activeScript.Content = sqlEditor.Text;
+
+            // Se não tem caminho, pede ao usuário
+            if (string.IsNullOrEmpty(_activeScript.FilePath))
+            {
+                using var sfd = new SaveFileDialog
+                {
+                    Filter = "SQL Files (*.sql)|*.sql|All Files (*.*)|*.*",
+                    FileName = _activeScript.DisplayName
+                };
+
+                if (sfd.ShowDialog() != DialogResult.OK) return;
+
+                _activeScript.FilePath = sfd.FileName;
+                _activeScript.DisplayName = Path.GetFileName(sfd.FileName);
+
+                // Atualiza grid
+                dataGridViewScripts.Refresh();
+            }
+
             try
             {
                 File.WriteAllText(_activeScript.FilePath, _activeScript.Content ?? string.Empty);
@@ -321,7 +337,8 @@ namespace SQLMultiScript.UI
             }
         }
 
-        private void DataGridViewScripts_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+
+        private void DataGridViewScripts_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex <= 0) return;
 
@@ -337,17 +354,19 @@ namespace SQLMultiScript.UI
 
             _activeScript = clickedScript;
 
+            // Se o script tem conteúdo em memória, carrega
             if (!string.IsNullOrEmpty(_activeScript.Content))
             {
                 sqlEditor.Text = _activeScript.Content;
             }
-            else if (File.Exists(_activeScript.FilePath))
+            else if (!string.IsNullOrEmpty(_activeScript.FilePath) && File.Exists(_activeScript.FilePath))
             {
                 _activeScript.Content = File.ReadAllText(_activeScript.FilePath);
                 sqlEditor.Text = _activeScript.Content;
             }
             else
             {
+                // Novo script em branco
                 _activeScript.Content = string.Empty;
                 sqlEditor.Text = string.Empty;
             }
@@ -355,7 +374,7 @@ namespace SQLMultiScript.UI
             Log($"Script ativo: {_activeScript.DisplayName}");
         }
 
-       
+
 
         private void ExecutarMenu_Click(object sender, EventArgs e)
         {
@@ -381,7 +400,7 @@ namespace SQLMultiScript.UI
         private void Log(string message, bool isError = false)
         {
             string prefix = isError ? "[ERRO]" : "[INFO]";
-            logBox.AppendText($"[{DateTime.Now:G}] {prefix} {message}");
+            logBox.AppendText($"[{DateTime.Now:G}] {prefix} {message}" + Environment.NewLine);
 
             if (isError) _logger.LogError(message);
             else _logger.LogInformation(message);
