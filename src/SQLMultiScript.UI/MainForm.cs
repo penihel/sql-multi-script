@@ -154,13 +154,18 @@ namespace SQLMultiScript.UI
             var buttonPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 30
+                Height = 50,
+                Padding = new Padding(UIConstants.PanelPadding)
             };
 
             btnAdd = new Button
             {
                 Text = "Add Existing",
-                Dock = DockStyle.Right
+                Dock = DockStyle.Right,
+                Image = Resources.Images.ic_fluent_add_24_regular,
+                ImageAlign = ContentAlignment.MiddleLeft,
+                Width = 150
+
             };
             btnAdd.Click += BtnAdd_Click;
             buttonPanel.Controls.Add(btnAdd);
@@ -630,7 +635,7 @@ namespace SQLMultiScript.UI
                 Log("[INFO] Projeto fechado");
             }
 
-            
+
         }
 
         private void ExitItem_Click(object sender, EventArgs e)
