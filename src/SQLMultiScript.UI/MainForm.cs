@@ -345,7 +345,14 @@ namespace SQLMultiScript.UI
             if (_currentProject != null)
             {
                 _activeScript = _currentProject.Scripts.FirstOrDefault();
-                sqlEditor.Text = _activeScript?.Content ?? string.Empty;
+                if (_activeScript != null)
+                {
+                    _activeScript.IsDirty = true;
+                    sqlEditor.Text = _activeScript.Content ?? string.Empty;
+                }
+
+
+
             }
 
             BindData();
@@ -396,13 +403,14 @@ namespace SQLMultiScript.UI
             // Atualiza conteúdo em memória
             _activeScript.Content = sqlEditor.Text;
 
-            SaveScript(_activeScript);
-
-            // Atualiza grid
-            dataGridViewScripts.Refresh();
+            if (SaveScript(_activeScript))
+            {
+                // Atualiza grid
+                dataGridViewScripts.Refresh();
+            }
         }
 
-        private void SaveScript(Script script)
+        private bool SaveScript(Script script)
         {
 
 
@@ -417,7 +425,7 @@ namespace SQLMultiScript.UI
                     FileName = script.DisplayName
                 };
 
-                if (sfd.ShowDialog() != DialogResult.OK) return;
+                if (sfd.ShowDialog() != DialogResult.OK) return false;
 
                 script.FilePath = sfd.FileName;
                 script.DisplayName = Path.GetFileName(sfd.FileName);
@@ -431,10 +439,14 @@ namespace SQLMultiScript.UI
                 script.IsDirty = false;
 
                 Log($"Script salvo: {script.FilePath}");
+
+                return true;
             }
             catch (Exception ex)
             {
                 Log($"Erro ao salvar {script.FilePath}: {ex.Message}", true);
+
+                return false;
             }
 
 
@@ -513,16 +525,29 @@ namespace SQLMultiScript.UI
                 // Atualiza conteúdo em memória
                 _activeScript.Content = sqlEditor.Text;
 
+            bool savedAllScripts = true;
+
             foreach (var script in _currentProject.Scripts.Where(s => s.IsDirty))
             {
-                SaveScript(script);
+                savedAllScripts = SaveScript(script);
+
+                if (!savedAllScripts)
+                    break;
+            }
+            if (savedAllScripts)
+            {
+                var savedProject = SaveProject(_currentProject);
+
+                if (savedProject)
+                {
+                    // Atualiza tela
+                }
             }
 
-            SaveProject(_currentProject);
 
         }
 
-        private void SaveProject(Project project)
+        private bool SaveProject(Project project)
         {
             // Se não tem caminho, pede ao usuário
             if (string.IsNullOrEmpty(project.FilePath))
@@ -533,7 +558,7 @@ namespace SQLMultiScript.UI
                     FileName = project.DisplayName ?? "NewProject.smsjsonproj"
                 };
 
-                if (sfd.ShowDialog() != DialogResult.OK) return;
+                if (sfd.ShowDialog() != DialogResult.OK) return false;
 
                 project.FilePath = sfd.FileName;
                 project.DisplayName = Path.GetFileNameWithoutExtension(sfd.FileName);
@@ -548,15 +573,19 @@ namespace SQLMultiScript.UI
 
                 File.WriteAllText(project.FilePath, projectJson);
 
-                
+
                 Log($"Project save: {project.FilePath}");
+
+                return true;
             }
             catch (Exception ex)
             {
                 Log($"Erro ao salvar {project.FilePath}: {ex.Message}", true);
+
+                return false;
             }
 
-            
+
         }
 
         private void CloseProjectItem_Click(object sender, EventArgs e)
