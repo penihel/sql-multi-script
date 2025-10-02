@@ -248,7 +248,7 @@ namespace SQLMultiScript.UI
             // Editor SQL (centro)
             sqlEditor = new Scintilla();
             sqlEditor.Dock = DockStyle.Fill;
-
+            sqlEditor.Enabled = false;
             sqlEditor.TextChanged += SqlEditor_TextChanged;
 
             sqlEditor.StyleResetDefault();
@@ -310,13 +310,7 @@ namespace SQLMultiScript.UI
 
         }
 
-        private void SqlEditor_TextChanged(object sender, EventArgs e)
-        {
-            if (_activeScript != null)
-            {
-                _activeScript.IsDirty = true;
-            }
-        }
+
 
         private bool CheckUnsavedChanges()
         {
@@ -344,11 +338,11 @@ namespace SQLMultiScript.UI
 
             if (_currentProject != null)
             {
-                _activeScript = _currentProject.Scripts.FirstOrDefault();
-                if (_activeScript != null)
+
+                var firstScript = _currentProject.Scripts.FirstOrDefault();
+                if (firstScript != null)
                 {
-                    _activeScript.IsDirty = true;
-                    sqlEditor.Text = _activeScript.Content ?? string.Empty;
+                    ShowScriptOnEditor(firstScript);
                 }
 
 
@@ -358,10 +352,7 @@ namespace SQLMultiScript.UI
             BindData();
         }
 
-        private async void MainForm_Load(object sender, EventArgs e)
-        {
-            await NewProject();
-        }
+
 
         private void BindData()
         {
@@ -371,45 +362,40 @@ namespace SQLMultiScript.UI
             dataGridViewScripts.Refresh();
         }
 
-        private void BtnAdd_Click(object sender, EventArgs e)
+        private void ShowScriptOnEditor(Script script)
         {
-            using var ofd = new OpenFileDialog { Filter = "SQL Files (*.sql)|*.sql|All Files (*.*)|*.*", Multiselect = true };
-            if (ofd.ShowDialog() != DialogResult.OK) return;
-
-            foreach (var file in ofd.FileNames)
+            // Salva conteúdo do script anterior em memória
+            if (_activeScript != null)
             {
-                _currentProject.Scripts.Add(new Script
-                {
-                    FilePath = file,
-                    DisplayName = Path.GetFileName(file),
-                    Selected = true
-                });
-                Log($"Script adicionado: {file}");
+                _activeScript.Content = sqlEditor.Text;
+                _activeScript.IsDirty = true;
             }
-        }
 
-        private void BtnNew_Click(object sender, EventArgs e)
-        {
-            _currentProject.Scripts.Add(new Script
+            _activeScript = script;
+
+            sqlEditor.Enabled = true;
+            // Se o script tem conteúdo em memória, carrega
+            if (!string.IsNullOrEmpty(_activeScript.Content))
             {
-                DisplayName = $"Script{_currentProject.Scripts.Count + 1}.sql"
-            });
-        }
+                sqlEditor.Text = _activeScript.Content;
 
-        private void BtnSave_Click(object sender, EventArgs e)
-        {
-            if (_activeScript == null) return;
-
-            // Atualiza conteúdo em memória
-            _activeScript.Content = sqlEditor.Text;
-
-            if (SaveScript(_activeScript))
-            {
-                // Atualiza grid
-                dataGridViewScripts.Refresh();
             }
-        }
+            else if (!string.IsNullOrEmpty(_activeScript.FilePath) && File.Exists(_activeScript.FilePath))
+            {
+                _activeScript.Content = File.ReadAllText(_activeScript.FilePath);
+                sqlEditor.Text = _activeScript.Content;
+            }
+            else
+            {
+                // Novo script em branco
+                _activeScript.Content = string.Empty;
+                sqlEditor.Text = string.Empty;
+                _activeScript.IsDirty = true;
 
+            }
+
+            Log($"Script ativo: {_activeScript.DisplayName}");
+        }
         private bool SaveScript(Script script)
         {
 
@@ -452,79 +438,8 @@ namespace SQLMultiScript.UI
 
         }
 
-        private void DataGridViewScripts_CellClick(object sender, DataGridViewCellEventArgs e)
+        private bool SaveProject(Project project)
         {
-            if (e.RowIndex < 0 || e.ColumnIndex <= 0) return;
-
-            var clickedScript = (Script)dataGridViewScripts.Rows[e.RowIndex].DataBoundItem;
-            if (clickedScript == null) return;
-
-            // Salva conteúdo do script anterior em memória
-            if (_activeScript != null)
-            {
-                _activeScript.Content = sqlEditor.Text;
-                _activeScript.IsDirty = true;
-            }
-
-            _activeScript = clickedScript;
-
-            // Se o script tem conteúdo em memória, carrega
-            if (!string.IsNullOrEmpty(_activeScript.Content))
-            {
-                sqlEditor.Text = _activeScript.Content;
-            }
-            else if (!string.IsNullOrEmpty(_activeScript.FilePath) && File.Exists(_activeScript.FilePath))
-            {
-                _activeScript.Content = File.ReadAllText(_activeScript.FilePath);
-                sqlEditor.Text = _activeScript.Content;
-            }
-            else
-            {
-                // Novo script em branco
-                _activeScript.Content = string.Empty;
-                sqlEditor.Text = string.Empty;
-            }
-
-            Log($"Script ativo: {_activeScript.DisplayName}");
-        }
-
-
-
-        private void ExecutarMenu_Click(object sender, EventArgs e)
-        {
-            if (_activeScript == null)
-            {
-                Log("[WARN] Nenhum script ativo para executar", true);
-                return;
-            }
-
-            string script = _activeScript.Content;
-            if (string.IsNullOrWhiteSpace(script))
-            {
-                Log("[WARN] Script vazio, nada a executar", true);
-                return;
-            }
-
-            // Aqui executa o script (simulado)
-            Log($"Executando script: {_activeScript.DisplayName}");
-            Log(script);
-            Log("Execução concluída com sucesso");
-        }
-
-        private async void NewProjectItem_Click(object sender, EventArgs e)
-        {
-            // Lógica para criar um novo projeto
-            Log("[INFO] New Project clicado");
-            await NewProject();
-        }
-
-        private void SaveProjectItem_Click(object sender, EventArgs e)
-        {
-            // Lógica para salvar projeto atual
-            if (_activeScript != null)
-                // Atualiza conteúdo em memória
-                _activeScript.Content = sqlEditor.Text;
-
             bool savedAllScripts = true;
 
             foreach (var script in _currentProject.Scripts.Where(s => s.IsDirty))
@@ -534,21 +449,9 @@ namespace SQLMultiScript.UI
                 if (!savedAllScripts)
                     break;
             }
-            if (savedAllScripts)
-            {
-                var savedProject = SaveProject(_currentProject);
 
-                if (savedProject)
-                {
-                    // Atualiza tela
-                }
-            }
+            if (!savedAllScripts) return false;
 
-
-        }
-
-        private bool SaveProject(Project project)
-        {
             // Se não tem caminho, pede ao usuário
             if (string.IsNullOrEmpty(project.FilePath))
             {
@@ -588,10 +491,146 @@ namespace SQLMultiScript.UI
 
         }
 
+        private async void MainForm_Load(object sender, EventArgs e)
+        {
+            await NewProject();
+        }
+
+        private void SqlEditor_TextChanged(object sender, EventArgs e)
+        {
+            if (_activeScript != null)
+            {
+                _activeScript.IsDirty = true;
+            }
+        }
+
+        private void BtnAdd_Click(object sender, EventArgs e)
+        {
+            if (_currentProject == null) return;
+
+            using var ofd = new OpenFileDialog { Filter = "SQL Files (*.sql)|*.sql|All Files (*.*)|*.*", Multiselect = true };
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+
+            foreach (var file in ofd.FileNames)
+            {
+                _currentProject.Scripts.Add(new Script
+                {
+                    FilePath = file,
+                    DisplayName = Path.GetFileName(file),
+                    Selected = true
+                });
+                Log($"Script adicionado: {file}");
+            }
+        }
+
+        private void BtnNew_Click(object sender, EventArgs e)
+        {
+            if (_currentProject == null) return;
+
+            _currentProject.Scripts.Add(new Script
+            {
+                DisplayName = $"Script{_currentProject.Scripts.Count + 1}.sql"
+            });
+        }
+
+        private void BtnSave_Click(object sender, EventArgs e)
+        {
+            if (_activeScript == null) return;
+
+            // Atualiza conteúdo em memória
+            _activeScript.Content = sqlEditor.Text;
+
+            if (SaveScript(_activeScript))
+            {
+                // Atualiza grid
+                dataGridViewScripts.Refresh();
+            }
+        }
+
+        private void DataGridViewScripts_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex <= 0) return;
+
+            var clickedScript = (Script)dataGridViewScripts.Rows[e.RowIndex].DataBoundItem;
+
+            if (clickedScript == null) return;
+
+            ShowScriptOnEditor(clickedScript);
+        }
+
+
+
+        private void ExecutarMenu_Click(object sender, EventArgs e)
+        {
+            if (_activeScript == null)
+            {
+                Log("[WARN] Nenhum script ativo para executar", true);
+                return;
+            }
+
+            string script = _activeScript.Content;
+            if (string.IsNullOrWhiteSpace(script))
+            {
+                Log("[WARN] Script vazio, nada a executar", true);
+                return;
+            }
+
+            // Aqui executa o script (simulado)
+            Log($"Executando script: {_activeScript.DisplayName}");
+            Log(script);
+            Log("Execução concluída com sucesso");
+        }
+
+        private async void NewProjectItem_Click(object sender, EventArgs e)
+        {
+            // Lógica para criar um novo projeto
+            Log("[INFO] New Project clicado");
+            await NewProject();
+        }
+
+        private void SaveProjectItem_Click(object sender, EventArgs e)
+        {
+            if (_currentProject == null) return;
+
+
+            // Lógica para salvar projeto atual
+            if (_activeScript != null)
+                // Atualiza conteúdo em memória
+                _activeScript.Content = sqlEditor.Text;
+
+
+
+            var savedProject = SaveProject(_currentProject);
+
+            if (savedProject)
+            {
+                // Atualiza tela
+            }
+
+
+
+        }
+
+
+
         private void CloseProjectItem_Click(object sender, EventArgs e)
         {
-            // Lógica para fechar projeto atual
-            Log("[INFO] Close Project clicado");
+            if (_currentProject == null) return;
+
+            var savedProject = SaveProject(_currentProject);
+
+            if (savedProject)
+            {
+                _currentProject = null;
+                _activeScript = null;
+                sqlEditor.Text = string.Empty;
+                sqlEditor.Enabled = false;
+                dataGridViewScripts.DataSource = null;
+                dataGridViewScripts.Refresh();
+                Log("[INFO] Projeto fechado");
+            }
+
+            
         }
 
         private void ExitItem_Click(object sender, EventArgs e)
