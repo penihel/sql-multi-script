@@ -9,7 +9,12 @@ namespace SQLMultiScript.Core.Models
         public string DisplayName { get; set; }
         
         [JsonIgnore] 
-        public string RuntimeContent { get; set; }
+        public string Content { get; set; }
+
+        // Flag para saber se o conteúdo foi alterado
+        [JsonIgnore]
+        public bool IsDirty { get; set; } = false;
+
         public override string ToString()   
         {
             return DisplayName;
