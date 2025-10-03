@@ -170,24 +170,31 @@ namespace SQLMultiScript.UI
             parentPanel.Controls.Add(listPanel);    // grid primeiro
 
             // -----------------------
-            // Painel de Botões
+            // TableLayoutPanel de Botões
             // -----------------------
-            var buttonPanel = new Panel
+            var topTableLayoutPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
                 Height = 50,
-                Padding = new Padding(UIConstants.PanelPadding)
+                ColumnCount = 2,
+                RowCount = 1,
             };
+            topTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Combo ocupa o espaço todo
+            topTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 50F)); // Botão fixo em 50px
 
             // Cria o ComboBox
             comboBoxDatabaseDistributionList = new ComboBox
             {
-                Dock = DockStyle.Left,
-                DropDownStyle = ComboBoxStyle.DropDownList, // não permite edição
+                Anchor = AnchorStyles.Left | AnchorStyles.Right, // só alinha horizontal
                 
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                
+
             };
 
-            buttonPanel.Controls.Add(comboBoxDatabaseDistributionList);
+            
+
+            topTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList,0,0);
 
             btnDatabaseDistributionList = new Button
             {
@@ -201,17 +208,17 @@ namespace SQLMultiScript.UI
             btnDatabaseDistributionList.Click += btnDatabaseDistributionList_Click;
 
 
-            buttonPanel.Controls.Add(btnDatabaseDistributionList);
+            topTableLayoutPanel.Controls.Add(btnDatabaseDistributionList, 1, 0);
 
-            parentPanel.Controls.Add(buttonPanel);  // botões por cima
+            parentPanel.Controls.Add(topTableLayoutPanel);  // botões por cima
 
-           
 
-           
-            
+
+
+
         }
 
-        
+
 
         private void SetupScriptsPanel(Panel parentPanel)
         {
@@ -503,7 +510,7 @@ namespace SQLMultiScript.UI
 
             }
 
-            
+
         }
 
 
@@ -660,7 +667,7 @@ namespace SQLMultiScript.UI
 
         private async Task LoadDistribuitionListsAsync()
         {
-            
+
 
             var databaseDistributionListsPath = Path.Combine(GetAppDataPath(), "DatabaseDistributionLists");
 
