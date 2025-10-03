@@ -3,6 +3,8 @@ using ScintillaNET;
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using SQLMultiScript.Services;
+using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace SQLMultiScript.UI
@@ -10,10 +12,12 @@ namespace SQLMultiScript.UI
     public class MainForm : Form
     {
         private readonly IProjectService _projectService;
+        private readonly IDatabaseDistributionListService _databaseDistributionListService;
         private readonly ILogger _logger;
 
         private Project _currentProject = null;
         private Script _activeScript = null;
+        private BindingList<DatabaseDistributionList> _databaseDistributionLists;
 
         // Componentes
         private SplitContainer splitMain, splitLeft, splitCenterRight, splitResultFooter;
@@ -22,13 +26,20 @@ namespace SQLMultiScript.UI
         private TextBox logBox;
         private MenuStrip menuStrip;
         private ToolStripMenuItem executarMenu;
-        private Button btnAdd, btnNew, btnSave;
+        private Button btnAdd, btnNew, btnSave, btnDatabaseDistributionList;
+
+        //
+        ComboBox comboBoxDatabaseDistributionList;
 
 
-        public MainForm(ILogger logger, IProjectService projectService)
+        public MainForm(
+            ILogger logger,
+            IProjectService projectService,
+            IDatabaseDistributionListService databaseDistributionListService)
         {
             _logger = logger;
             _projectService = projectService;
+            _databaseDistributionListService = databaseDistributionListService;
 
             InitializeLayout();
 
@@ -74,6 +85,9 @@ namespace SQLMultiScript.UI
             //Setup Editor Panel
             SetupEditorPanel(splitCenterRight.Panel1);
 
+            //Setup DAtabaseDistributionList panel
+            SetupDatabaseDistributionListPanel(splitCenterRight.Panel2);
+
             // Split footer/result
             splitResultFooter = new SplitContainer
             {
@@ -100,6 +114,46 @@ namespace SQLMultiScript.UI
 
             InitializeMenu();
         }
+
+        private void SetupDatabaseDistributionListPanel(Panel parentPanel)
+        {
+            // Cria o ComboBox
+            comboBoxDatabaseDistributionList = new ComboBox
+            {
+                Dock = DockStyle.Top,
+                DropDownStyle = ComboBoxStyle.DropDownList, // não permite edição
+                //DataSource = _databaseDistributionLists     // faz o binding
+            };
+
+            //ic_fluent_database_stack_16_regular.png
+
+            btnDatabaseDistributionList = new Button
+            {
+                Dock = DockStyle.Right,
+                Image = Images.ic_fluent_database_stack_16_regular,
+                Width = 50
+            };
+            var toolTipBtn = new ToolTip();
+            toolTipBtn.SetToolTip(btnDatabaseDistributionList, Resources.Strings.DatabaseDistributionLists);
+
+            btnDatabaseDistributionList.Click += btnDatabaseDistributionList_Click;
+
+            // -----------------------
+            // Painel 
+            // -----------------------
+            var comboPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(UIConstants.PanelPadding)
+            };
+
+            
+
+            parentPanel.Controls.Add(comboBoxDatabaseDistributionList);
+            parentPanel.Controls.Add(btnDatabaseDistributionList);
+        }
+
+        
 
         private void SetupScriptsPanel(Panel parentPanel)
         {
@@ -193,7 +247,7 @@ namespace SQLMultiScript.UI
 
             btnAdd = new Button
             {
-                
+
                 Dock = DockStyle.Right,
                 Image = Images.ic_fluent_add_24_regular,
                 FlatStyle = FlatStyle.Standard,
@@ -209,7 +263,7 @@ namespace SQLMultiScript.UI
 
             btnNew = new Button
             {
-                
+
                 Dock = DockStyle.Left,
                 Image = Images.ic_fluent_new_24_regular,
                 Width = 50
@@ -367,7 +421,7 @@ namespace SQLMultiScript.UI
             }
             return true;
         }
-        private async Task NewProject()
+        private async Task NewProjectAsync()
         {
 
             if (!CheckUnsavedChanges())
@@ -391,7 +445,7 @@ namespace SQLMultiScript.UI
 
             }
 
-            BindData();
+            
         }
 
 
@@ -399,6 +453,10 @@ namespace SQLMultiScript.UI
         private void BindData()
         {
             dataGridViewScripts.DataSource = _currentProject.Scripts;
+            comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
+            comboBoxDatabaseDistributionList.DisplayMember = "DisplayName";
+            comboBoxDatabaseDistributionList.ValueMember = "Id";
+            comboBoxDatabaseDistributionList.DataBindings.Add("SelectedValue", _currentProject, "SelectedDistributionListId", true, DataSourceUpdateMode.OnPropertyChanged);
 
             // Atualiza grid
             dataGridViewScripts.Refresh();
@@ -535,7 +593,26 @@ namespace SQLMultiScript.UI
 
         private async void MainForm_Load(object sender, EventArgs e)
         {
-            await NewProject();
+            await LoadDistribuitionListsAsync();
+            await NewProjectAsync();
+
+
+            BindData();
+        }
+
+        private async Task LoadDistribuitionListsAsync()
+        {
+            
+
+            var databaseDistributionListsPath = Path.Combine(GetAppDataPath(), "DatabaseDistributionLists");
+
+            if (!Directory.Exists(databaseDistributionListsPath))
+                Directory.CreateDirectory(databaseDistributionListsPath);
+
+            _databaseDistributionLists =
+                new BindingList<DatabaseDistributionList>(await _databaseDistributionListService.ListAsync(databaseDistributionListsPath));
+
+
         }
 
         private void SqlEditor_TextChanged(object sender, EventArgs e)
@@ -629,7 +706,7 @@ namespace SQLMultiScript.UI
         {
             // Lógica para criar um novo projeto
             Log("[INFO] New Project clicado");
-            await NewProject();
+            await NewProjectAsync();
         }
 
         private void SaveProjectItem_Click(object sender, EventArgs e)
@@ -709,6 +786,11 @@ namespace SQLMultiScript.UI
 
         }
 
+        private void btnDatabaseDistributionList_Click(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
         private void RemoveScripts()
         {
             if (dataGridViewScripts.SelectedRows.Count == 0)
@@ -734,6 +816,16 @@ namespace SQLMultiScript.UI
 
         }
 
+        private string GetAppDataPath()
+        {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string appFolder = Path.Combine(appData, Constants.ApplicationName);
+            if (!Directory.Exists(appFolder))
+            {
+                Directory.CreateDirectory(appFolder);
+            }
+            return appFolder;
+        }
         private void Log(string message, bool isError = false)
         {
             string prefix = isError ? "[ERRO]" : "[INFO]";

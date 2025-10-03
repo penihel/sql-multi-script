@@ -44,7 +44,8 @@ namespace SQLMultiScript.UI
 
             var services = new ServiceCollection();
             services.AddSingleton<IProjectService, ProjectService>();
-
+            services.AddSingleton<IDatabaseDistributionListService, DatabaseDistributionListService>();
+            
 
             using (var provider = services.BuildServiceProvider())
             {
@@ -52,11 +53,12 @@ namespace SQLMultiScript.UI
 
                 _logger.LogInformation("Aplicação iniciada");
 
-                var applicationStateService = provider.GetRequiredService<IProjectService>();
+                var projectService = provider.GetRequiredService<IProjectService>();
+                var databaseDistributionListService = provider.GetRequiredService<IDatabaseDistributionListService>();
 
-                
 
-                Application.Run(new MainForm(_logger, applicationStateService));
+
+                Application.Run(new MainForm(_logger, projectService, databaseDistributionListService));
             }
 
 

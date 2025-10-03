@@ -132,4 +132,7 @@
   <data name="Save" xml:space="preserve">
     <value>Save</value>
   </data>
+  <data name="DatabaseDistributionLists" xml:space="preserve">
+    <value>Database Distribution Lists</value>
+  </data>
 </root>

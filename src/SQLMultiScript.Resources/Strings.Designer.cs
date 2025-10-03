@@ -70,6 +70,15 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Database Distribution Lists.
+        /// </summary>
+        public static string DatabaseDistributionLists {
+            get {
+                return ResourceManager.GetString("DatabaseDistributionLists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to File.
         /// </summary>
         public static string File {

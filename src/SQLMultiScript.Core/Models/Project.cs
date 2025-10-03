@@ -15,7 +15,9 @@ namespace SQLMultiScript.Core.Models
         public BindingList<Script> Scripts { get; set; } = new BindingList<Script>();
 
 
+        public Guid? SelectedDistributionListId { get; set; }
 
+        
 
     }
 }
