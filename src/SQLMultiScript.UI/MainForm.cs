@@ -271,7 +271,7 @@ namespace SQLMultiScript.UI
             var editorPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Height = 30,
+                Padding = new Padding(UIConstants.PanelPadding),
                 BackColor = Color.Transparent // opcional
             };
 
@@ -324,7 +324,8 @@ namespace SQLMultiScript.UI
             var buttonPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 30
+                Padding = new Padding(UIConstants.PanelPadding),
+                Height = 50,
             };
 
             // Botão Salvar no canto direito
@@ -332,7 +333,7 @@ namespace SQLMultiScript.UI
             {
                 Text = "Save",
                 Dock = DockStyle.Right,
-                Width = 80
+                Width = 100
             };
             btnSave.Click += BtnSave_Click;
 
