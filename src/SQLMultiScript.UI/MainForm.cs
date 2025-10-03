@@ -3,9 +3,7 @@ using ScintillaNET;
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
-using SQLMultiScript.Services;
 using System.ComponentModel;
-using System.Windows.Forms;
 
 namespace SQLMultiScript.UI
 {
@@ -21,7 +19,7 @@ namespace SQLMultiScript.UI
 
         // Componentes
         private SplitContainer splitMain, splitLeft, splitCenterRight, splitResultFooter;
-        private DataGridView dataGridViewScripts;
+        private DataGridView dataGridViewScripts, dataGridViewDatabases;
         private Scintilla sqlEditor;
         private TextBox logBox;
         private MenuStrip menuStrip;
@@ -117,15 +115,79 @@ namespace SQLMultiScript.UI
 
         private void SetupDatabaseDistributionListPanel(Panel parentPanel)
         {
+            // -----------------------
+            // DataGridView
+            // -----------------------
+            dataGridViewDatabases = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                AutoGenerateColumns = false,
+                RowHeadersVisible = false,
+                ColumnHeadersVisible = true,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AllowDrop = false,
+                AllowUserToOrderColumns = false,
+                AllowUserToResizeColumns = false,
+                AllowUserToResizeRows = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+
+            };
+
+            // Checkbox
+            var colSelected = new DataGridViewCheckBoxColumn
+            {
+                DataPropertyName = "Selected",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+            };
+            dataGridViewDatabases.Columns.Add(colSelected);
+
+            // Nome do Script
+            var colName = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "DisplayName",
+                HeaderText = Resources.Strings.Database,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                ReadOnly = true
+            };
+            dataGridViewDatabases.Columns.Add(colName);
+
+            dataGridViewDatabases.CellClick += DataGridViewDatabases_CellClick;
+
+
+
+            // -----------------------
+            // Painel do grid
+            // -----------------------
+            var listPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(UIConstants.PanelPadding)
+            };
+
+            listPanel.Controls.Add(dataGridViewDatabases);
+
+            parentPanel.Controls.Add(listPanel);    // grid primeiro
+
+            // -----------------------
+            // Painel de Botões
+            // -----------------------
+            var buttonPanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 50,
+                Padding = new Padding(UIConstants.PanelPadding)
+            };
+
             // Cria o ComboBox
             comboBoxDatabaseDistributionList = new ComboBox
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Left,
                 DropDownStyle = ComboBoxStyle.DropDownList, // não permite edição
-                //DataSource = _databaseDistributionLists     // faz o binding
+                
             };
 
-            //ic_fluent_database_stack_16_regular.png
+            buttonPanel.Controls.Add(comboBoxDatabaseDistributionList);
 
             btnDatabaseDistributionList = new Button
             {
@@ -138,19 +200,15 @@ namespace SQLMultiScript.UI
 
             btnDatabaseDistributionList.Click += btnDatabaseDistributionList_Click;
 
-            // -----------------------
-            // Painel 
-            // -----------------------
-            var comboPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = new Padding(UIConstants.PanelPadding)
-            };
 
+            buttonPanel.Controls.Add(btnDatabaseDistributionList);
+
+            parentPanel.Controls.Add(buttonPanel);  // botões por cima
+
+           
+
+           
             
-
-            parentPanel.Controls.Add(comboBoxDatabaseDistributionList);
-            parentPanel.Controls.Add(btnDatabaseDistributionList);
         }
 
         
@@ -677,6 +735,11 @@ namespace SQLMultiScript.UI
             if (clickedScript == null) return;
 
             ShowScriptOnEditor(clickedScript);
+        }
+
+        private void DataGridViewDatabases_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+
         }
 
 

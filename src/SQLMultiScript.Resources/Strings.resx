@@ -135,4 +135,7 @@
   <data name="DatabaseDistributionLists" xml:space="preserve">
     <value>Database Distribution Lists</value>
   </data>
+  <data name="Database" xml:space="preserve">
+    <value>Database</value>
+  </data>
 </root>
