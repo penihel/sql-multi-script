@@ -138,4 +138,13 @@
   <data name="Database" xml:space="preserve">
     <value>Banco de dados</value>
   </data>
+  <data name="Up" xml:space="preserve">
+    <value>Acima</value>
+  </data>
+  <data name="Down" xml:space="preserve">
+    <value>Abaixo</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remover</value>
+  </data>
 </root>

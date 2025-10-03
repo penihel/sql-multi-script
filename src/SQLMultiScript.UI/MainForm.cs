@@ -24,7 +24,7 @@ namespace SQLMultiScript.UI
         private TextBox logBox;
         private MenuStrip menuStrip;
         private ToolStripMenuItem executarMenu;
-        private Button btnAdd, btnNew, btnSave, btnDatabaseDistributionList;
+        private Button btnUp, btnDown, btnAdd, btnNew, btnSave, btnRemove, btnDatabaseDistributionList;
 
         //
         ComboBox comboBoxDatabaseDistributionList;
@@ -310,6 +310,70 @@ namespace SQLMultiScript.UI
                 Padding = new Padding(UIConstants.PanelPadding)
             };
 
+            
+
+
+            btnDown = new Button
+            {
+
+                Dock = DockStyle.Left,
+                Image = Images.ic_fluent_arrow_circle_down_24_regular,
+                Width = 50
+            };
+            btnDown.Click += BtnDown_Click;
+            var toolTipBtnDown = new ToolTip();
+            toolTipBtnDown.SetToolTip(btnDown, Resources.Strings.Down);
+
+
+            btnUp = new Button
+            {
+
+                Dock = DockStyle.Left,
+                Image = Images.ic_fluent_arrow_circle_up_24_regular,
+                Width = 50
+            };
+            btnUp.Click += BtnUp_Click;
+            var toolTipBtnUp = new ToolTip();
+            toolTipBtnUp.SetToolTip(btnUp, Resources.Strings.Up);
+
+
+            btnRemove = new Button
+            {
+
+                Dock = DockStyle.Left,
+                Image = Images.ic_fluent_delete_24_regular,
+                FlatStyle = FlatStyle.Standard,
+                ImageAlign = ContentAlignment.MiddleCenter,
+                Width = 50
+
+            };
+            btnRemove.Click += BtnRemove_Click;
+            var toolTipBtnRemove = new ToolTip();
+            toolTipBtnRemove.SetToolTip(btnRemove, Resources.Strings.Remove);
+
+            
+            
+            buttonPanel.Controls.Add(btnRemove);
+            buttonPanel.Controls.Add(btnDown);
+            buttonPanel.Controls.Add(btnUp);
+
+
+            //
+
+            btnNew = new Button
+            {
+
+                Dock = DockStyle.Right,
+                Image = Images.ic_fluent_new_24_regular,
+                Width = 50
+            };
+            btnNew.Click += BtnNew_Click;
+            var toolTipBtnNew = new ToolTip();
+            toolTipBtnNew.SetToolTip(btnNew, Resources.Strings.New);
+            buttonPanel.Controls.Add(btnNew);
+
+
+
             btnAdd = new Button
             {
 
@@ -326,17 +390,8 @@ namespace SQLMultiScript.UI
 
             buttonPanel.Controls.Add(btnAdd);
 
-            btnNew = new Button
-            {
 
-                Dock = DockStyle.Left,
-                Image = Images.ic_fluent_new_24_regular,
-                Width = 50
-            };
-            btnNew.Click += BtnNew_Click;
-            var toolTipBtnNew = new ToolTip();
-            toolTipBtnNew.SetToolTip(btnNew, Resources.Strings.New);
-            buttonPanel.Controls.Add(btnNew);
+            
 
 
 
@@ -707,6 +762,20 @@ namespace SQLMultiScript.UI
             }
         }
 
+        private void BtnRemove_Click(object sender, EventArgs e)
+        {
+
+        }
+        
+        private void BtnUp_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void BtnDown_Click(object sender, EventArgs e)
+        {
+
+        }
         private void BtnNew_Click(object sender, EventArgs e)
         {
             if (_currentProject == null) return;
@@ -858,7 +927,7 @@ namespace SQLMultiScript.UI
 
         private void btnDatabaseDistributionList_Click(object sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            
         }
 
         private void RemoveScripts()
