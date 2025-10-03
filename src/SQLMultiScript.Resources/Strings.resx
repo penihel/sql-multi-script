@@ -129,4 +129,7 @@
   <data name="RemoveSelectedRows" xml:space="preserve">
     <value>Remove selected rows</value>
   </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
 </root>

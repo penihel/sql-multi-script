@@ -193,23 +193,30 @@ namespace SQLMultiScript.UI
 
             btnAdd = new Button
             {
-                Text = Resources.Strings.AddExisting,
+                
                 Dock = DockStyle.Right,
                 Image = Images.ic_fluent_add_24_regular,
-                ImageAlign = ContentAlignment.MiddleLeft,
-                Width = 200
+                FlatStyle = FlatStyle.Standard,
+                ImageAlign = ContentAlignment.MiddleCenter,
+                Width = 50
 
             };
             btnAdd.Click += BtnAdd_Click;
+            var toolTipBtnAdd = new ToolTip();
+            toolTipBtnAdd.SetToolTip(btnAdd, Resources.Strings.AddExisting);
+
             buttonPanel.Controls.Add(btnAdd);
 
             btnNew = new Button
             {
-                Text = Resources.Strings.New,
+                
                 Dock = DockStyle.Left,
-                Width = 100
+                Image = Images.ic_fluent_new_24_regular,
+                Width = 50
             };
             btnNew.Click += BtnNew_Click;
+            var toolTipBtnNew = new ToolTip();
+            toolTipBtnNew.SetToolTip(btnNew, Resources.Strings.New);
             buttonPanel.Controls.Add(btnNew);
 
 
@@ -331,12 +338,13 @@ namespace SQLMultiScript.UI
             // Botão Salvar no canto direito
             btnSave = new Button
             {
-                Text = "Save",
+                Image = Images.ic_fluent_save_24_regular,
                 Dock = DockStyle.Right,
-                Width = 100
+                Width = 50
             };
             btnSave.Click += BtnSave_Click;
-
+            var toolTipBtnSave = new ToolTip();
+            toolTipBtnSave.SetToolTip(btnSave, Resources.Strings.Save);
             buttonPanel.Controls.Add(btnSave);
 
 
