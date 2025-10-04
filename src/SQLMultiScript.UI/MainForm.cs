@@ -25,9 +25,10 @@ namespace SQLMultiScript.UI
         private MenuStrip menuStrip;
         private ToolStripMenuItem executarMenu;
         private Button btnUp, btnDown, btnAdd, btnNew, btnSave, btnRemove, btnDatabaseDistributionList;
+        private ComboBox comboBoxDatabaseDistributionList;
 
-        //
-        ComboBox comboBoxDatabaseDistributionList;
+        //forms
+        DatabaseDistributionListForm databaseDistributionListForm;
 
 
         public MainForm(
@@ -927,7 +928,9 @@ namespace SQLMultiScript.UI
 
         private void btnDatabaseDistributionList_Click(object sender, EventArgs e)
         {
-            
+            databaseDistributionListForm = new DatabaseDistributionListForm();
+
+            var result = databaseDistributionListForm.ShowDialog(this);
         }
 
         private void RemoveScripts()
