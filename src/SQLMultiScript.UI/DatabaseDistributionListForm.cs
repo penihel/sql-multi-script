@@ -6,6 +6,8 @@ namespace SQLMultiScript.UI
     {
         private TableLayoutPanel tableLayoutPanel;
 
+        private Button btnNew;
+
         public DatabaseDistributionListForm()
         {
             InitializeLayout();
@@ -32,6 +34,7 @@ namespace SQLMultiScript.UI
                 AutoSize = true,
                 ColumnCount = 3,
                 RowCount = 2,
+                Padding = new Padding(UIConstants.PanelPadding),
             };
 
             // Definindo larguras/alturas automáticas
@@ -39,17 +42,10 @@ namespace SQLMultiScript.UI
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10f));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40f));
 
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 90f));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 10f));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f));
 
-            // Exemplo: adicionar um botão
-            var button = new Button
-            {
-                Text = "OK",
-                Dock = DockStyle.Fill
-            };
-            tableLayoutPanel.Controls.Add(button, 0, 0);
-
+            
             Controls.Add(tableLayoutPanel);
 
 
@@ -62,41 +58,66 @@ namespace SQLMultiScript.UI
             // Painel da célula (coluna 1, linha 1 → índice 0,0)
             var panel = new Panel
             {
-                Dock = DockStyle.Fill
+                Dock = DockStyle.Fill,
+                Padding = new Padding(UIConstants.PanelPadding),
+            };
+
+
+            var panelTreeView = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(UIConstants.PanelPadding),
             };
 
             // TreeView ocupa o topo e se expande
             var treeView = new TreeView
             {
-                Dock = DockStyle.Fill
+                Dock = DockStyle.Fill,
+                Padding = new Padding(UIConstants.PanelPadding),
             };
 
             // Painel de botões no rodapé
             var buttonPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
-                
-                Height = 40,
-                Padding = new Padding(5)
+
+                Padding = new Padding(UIConstants.PanelPadding),
+                Height = 50,
             };
 
-            // Botões
-            var btnAdd = new Button { Dock = DockStyle.Right, Text = "Adicionar", AutoSize = true };
-            var btnEdit = new Button { Dock = DockStyle.Right, Text = "Editar", AutoSize = true };
-            var btnRemove = new Button { Dock = DockStyle.Right, Text = "Remover", AutoSize = true };
 
-            // Adiciona botões (em ordem inversa, já que o FlowDirection é RightToLeft)
-            buttonPanel.Controls.Add(btnAdd);
-            buttonPanel.Controls.Add(btnEdit);
-            buttonPanel.Controls.Add(btnRemove);
+            // Botões
+            btnNew = new Button
+            {
+
+                Dock = DockStyle.Right,
+                Image = Images.ic_fluent_new_24_regular,
+                Width = 50
+            };
+            btnNew.Click += BtnNew_Click;
+            var toolTipBtnNew = new ToolTip();
+            toolTipBtnNew.SetToolTip(btnNew, Resources.Strings.New);
+            buttonPanel.Controls.Add(btnNew);
+
+
+            
+            buttonPanel.Controls.Add(btnNew);
+
 
             // Monta painel
-            panel.Controls.Add(treeView);
+            panelTreeView.Controls.Add(treeView);
+            
+            panel.Controls.Add(panelTreeView);
             panel.Controls.Add(buttonPanel);
 
             // Adiciona no TableLayout
             tableLayoutPanel.Controls.Add(panel, 0, 0);
 
+            
+        }
+
+        private void BtnNew_Click(object sender, EventArgs e)
+        {
             
         }
     }
