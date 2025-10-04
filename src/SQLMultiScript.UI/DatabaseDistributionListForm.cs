@@ -72,18 +72,18 @@ namespace SQLMultiScript.UI
             };
 
             // Painel de botões no rodapé
-            var buttonPanel = new FlowLayoutPanel
+            var buttonPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
-                FlowDirection = FlowDirection.RightToLeft, // botões à direita
+                
                 Height = 40,
                 Padding = new Padding(5)
             };
 
             // Botões
-            var btnAdd = new Button { Text = "Adicionar", AutoSize = true };
-            var btnEdit = new Button { Text = "Editar", AutoSize = true };
-            var btnRemove = new Button { Text = "Remover", AutoSize = true };
+            var btnAdd = new Button { Dock = DockStyle.Right, Text = "Adicionar", AutoSize = true };
+            var btnEdit = new Button { Dock = DockStyle.Right, Text = "Editar", AutoSize = true };
+            var btnRemove = new Button { Dock = DockStyle.Right, Text = "Remover", AutoSize = true };
 
             // Adiciona botões (em ordem inversa, já que o FlowDirection é RightToLeft)
             buttonPanel.Controls.Add(btnAdd);

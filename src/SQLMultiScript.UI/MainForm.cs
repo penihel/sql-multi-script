@@ -109,8 +109,6 @@ namespace SQLMultiScript.UI
             logBox = new TextBox { Dock = DockStyle.Fill, Multiline = true, ScrollBars = ScrollBars.Vertical };
             splitResultFooter.Panel2.Controls.Add(logBox);
 
-            //SetupMenu();
-
             InitializeMenu();
         }
 
@@ -342,9 +340,7 @@ namespace SQLMultiScript.UI
             {
 
                 Dock = DockStyle.Left,
-                Image = Images.ic_fluent_delete_24_regular,
-                FlatStyle = FlatStyle.Standard,
-                ImageAlign = ContentAlignment.MiddleCenter,
+                Image = Images.ic_fluent_delete_24_regular,               
                 Width = 50
 
             };
@@ -379,9 +375,7 @@ namespace SQLMultiScript.UI
             {
 
                 Dock = DockStyle.Right,
-                Image = Images.ic_fluent_add_24_regular,
-                FlatStyle = FlatStyle.Standard,
-                ImageAlign = ContentAlignment.MiddleCenter,
+                Image = Images.ic_fluent_add_24_regular,                
                 Width = 50
 
             };
