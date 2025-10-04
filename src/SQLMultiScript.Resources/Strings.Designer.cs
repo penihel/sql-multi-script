@@ -88,6 +88,15 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Databases to Add.
+        /// </summary>
+        public static string DatabasesToAdd {
+            get {
+                return ResourceManager.GetString("DatabasesToAdd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Down.
         /// </summary>
         public static string Down {

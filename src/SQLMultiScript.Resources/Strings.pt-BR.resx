@@ -147,4 +147,7 @@
   <data name="Remove" xml:space="preserve">
     <value>Remover</value>
   </data>
+  <data name="DatabasesToAdd" xml:space="preserve">
+    <value>Banco de dados à adicionar</value>
+  </data>
 </root>

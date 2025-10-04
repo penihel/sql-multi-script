@@ -69,6 +69,14 @@ namespace SQLMultiScript.UI
                 Padding = new Padding(UIConstants.PanelPadding),
             };
 
+            var label = new Label
+            {
+                Text = Resources.Strings.DatabasesToAdd,
+                Dock = DockStyle.Top,
+                Height = 20,
+                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+
+            };
             // TreeView ocupa o topo e se expande
             var treeView = new TreeView
             {
@@ -105,6 +113,7 @@ namespace SQLMultiScript.UI
 
 
             // Monta painel
+            panelTreeView.Controls.Add(label);
             panelTreeView.Controls.Add(treeView);
             
             panel.Controls.Add(panelTreeView);
@@ -118,7 +127,10 @@ namespace SQLMultiScript.UI
 
         private void BtnNew_Click(object sender, EventArgs e)
         {
-            
+            var newConnectionForm
+                 = new NewConnectionForm();
+
+            var result = newConnectionForm.ShowDialog(this);
         }
     }
 }
