@@ -1,4 +1,5 @@
-﻿using System.Windows.Forms;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Windows.Forms;
 
 namespace SQLMultiScript.UI
 {
@@ -7,10 +8,12 @@ namespace SQLMultiScript.UI
         private TableLayoutPanel tableLayoutPanel;
 
         private Button btnNew;
+        private readonly IServiceProvider _serviceProvider;
 
-        public DatabaseDistributionListForm()
+        public DatabaseDistributionListForm(IServiceProvider serviceProvider)
         {
             InitializeLayout();
+            _serviceProvider = serviceProvider;
         }
 
         private void InitializeLayout()
@@ -131,8 +134,7 @@ namespace SQLMultiScript.UI
 
         private void BtnNew_Click(object sender, EventArgs e)
         {
-            var newConnectionForm
-                 = new NewConnectionForm();
+            var newConnectionForm = _serviceProvider.GetRequiredService<NewConnectionForm>();
 
             var result = newConnectionForm.ShowDialog(this);
         }

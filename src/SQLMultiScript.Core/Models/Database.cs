@@ -6,7 +6,7 @@
 
         
 
-        public ServerConnection ServerConnection { get; set; }
+        public Connection ServerConnection { get; set; }
 
     }
 }

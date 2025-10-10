@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Services;
 
@@ -7,63 +8,60 @@ namespace SQLMultiScript.UI
 {
     public static class Program
     {
-        private static ILogger _logger;
-        private const string SQLMultiScript = "SQLMultiScript";
-        private const string ApplicationStateFileName = "ApplicationState.json";
-
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
-            // Configura o LoggerFactory
-            using var loggerFactory = LoggerFactory.Create(builder =>
+            var services = new ServiceCollection();
+
+            // Logging
+            services.AddLogging(builder =>
             {
                 builder
                     .SetMinimumLevel(LogLevel.Information)
-                    .AddConsole(); // escreve no console
-
+                    .AddConsole();
             });
 
-            _logger = loggerFactory.CreateLogger(SQLMultiScript);
-
-            // Captura erros não tratados no UI thread
-            Application.ThreadException += (s, e) =>
-            {
-                _logger.LogError(e.Exception, "Erro não tratado no thread da UI");
-            };
-
-            // Captura erros fatais (AppDomain)
-            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
-            {
-                if (e.ExceptionObject is Exception ex)
-                    _logger.LogCritical(ex, "Erro fatal");
-            };
-
-
-            var services = new ServiceCollection();
+            // Registrar serviços
             services.AddSingleton<IProjectService, ProjectService>();
             services.AddSingleton<IDatabaseDistributionListService, DatabaseDistributionListService>();
+            services.AddSingleton<IConnectionService, ConnectionService>();
+
             
+            // Registrar um ILogger genérico com categoria "SQLMultiScript"
+            services.AddSingleton(provider =>
+            {
+                var factory = provider.GetRequiredService<ILoggerFactory>();
+                return factory.CreateLogger(Constants.ApplicationName);
+            });
+
+            // Registrar Forms (agora recebem ILogger injetado)
+            services.AddTransient<MainForm>();
+            services.AddTransient<DatabaseDistributionListForm>();
+            services.AddTransient<NewConnectionForm>();
 
             using (var provider = services.BuildServiceProvider())
             {
                 ApplicationConfiguration.Initialize();
 
-                _logger.LogInformation("Aplicação iniciada");
+                // Pega o logger diretamente
+                var logger = provider.GetRequiredService<ILogger>();
 
-                var projectService = provider.GetRequiredService<IProjectService>();
-                var databaseDistributionListService = provider.GetRequiredService<IDatabaseDistributionListService>();
+                logger.LogInformation("Aplicação iniciada");
 
+                Application.ThreadException += (s, e) =>
+                {
+                    logger.LogError(e.Exception, "Erro não tratado no thread da UI");
+                };
 
+                AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+                {
+                    if (e.ExceptionObject is Exception ex)
+                        logger.LogCritical(ex, "Erro fatal");
+                };
 
-                Application.Run(new MainForm(_logger, projectService, databaseDistributionListService));
+                var mainForm = provider.GetRequiredService<MainForm>();
+                Application.Run(mainForm);
             }
-
-
         }
-
-        
     }
 }

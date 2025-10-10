@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ScintillaNET;
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
@@ -12,6 +13,7 @@ namespace SQLMultiScript.UI
         private readonly IProjectService _projectService;
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
         private readonly ILogger _logger;
+        private readonly IServiceProvider _serviceProvider;
 
         private Project _currentProject = null;
         private Script _activeScript = null;
@@ -34,12 +36,13 @@ namespace SQLMultiScript.UI
         public MainForm(
             ILogger logger,
             IProjectService projectService,
-            IDatabaseDistributionListService databaseDistributionListService)
+            IDatabaseDistributionListService databaseDistributionListService,
+            IServiceProvider serviceProvider)
         {
             _logger = logger;
             _projectService = projectService;
             _databaseDistributionListService = databaseDistributionListService;
-
+            _serviceProvider = serviceProvider;
             InitializeLayout();
 
 
@@ -924,7 +927,9 @@ namespace SQLMultiScript.UI
 
         private void btnDatabaseDistributionList_Click(object sender, EventArgs e)
         {
-            databaseDistributionListForm = new DatabaseDistributionListForm();
+            var databaseDistributionListForm = _serviceProvider.GetRequiredService<DatabaseDistributionListForm>();
+
+            
 
             var result = databaseDistributionListForm.ShowDialog(this);
         }
