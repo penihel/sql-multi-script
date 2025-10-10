@@ -17,6 +17,7 @@ namespace SQLMultiScript.UI
         {
             MaximizeBox = false;
             MinimizeBox = false;
+            ShowInTaskbar = false;
 
             var screenSize = Screen.PrimaryScreen.WorkingArea;
 
@@ -73,15 +74,18 @@ namespace SQLMultiScript.UI
             {
                 Text = Resources.Strings.DatabasesToAdd,
                 Dock = DockStyle.Top,
-                Height = 20,
-                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Height = 24, // altura fixa para não sobrepor
+                Padding = new Padding(0, 0, 0, 4), // espaço abaixo do texto
 
             };
             // TreeView ocupa o topo e se expande
             var treeView = new TreeView
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(UIConstants.PanelPadding),
+                BorderStyle = BorderStyle.FixedSingle,
+                // adiciona espaço no topo para não encostar no label
+                Margin = new Padding(0, 4, 0, 0),
             };
 
             // Painel de botões no rodapé
@@ -113,8 +117,8 @@ namespace SQLMultiScript.UI
 
 
             // Monta painel
-            panelTreeView.Controls.Add(label);
             panelTreeView.Controls.Add(treeView);
+            panelTreeView.Controls.Add(label);
             
             panel.Controls.Add(panelTreeView);
             panel.Controls.Add(buttonPanel);

@@ -47,6 +47,7 @@ namespace SQLMultiScript.UI
 
         private void InitializeLayout()
         {
+            
             Text = $"{Constants.ApplicationName} - {Constants.ApplicationVersion}";
             WindowState = FormWindowState.Maximized;
             Load += MainForm_Load;
@@ -900,7 +901,8 @@ namespace SQLMultiScript.UI
             {
                 Text = "About",
                 Size = new Size(400, 200),
-                StartPosition = FormStartPosition.CenterParent
+                StartPosition = FormStartPosition.CenterParent, 
+                ShowInTaskbar = false
             };
 
             var lbl = new Label

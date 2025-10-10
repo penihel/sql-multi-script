@@ -93,6 +93,16 @@ namespace SQLMultiScript.UI {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap ic_fluent_database_plug_connected_20_regular {
+            get {
+                object obj = ResourceManager.GetObject("ic_fluent_database_plug_connected_20_regular", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap ic_fluent_database_stack_16_regular {
             get {
                 object obj = ResourceManager.GetObject("ic_fluent_database_stack_16_regular", resourceCulture);
@@ -106,6 +116,16 @@ namespace SQLMultiScript.UI {
         internal static System.Drawing.Bitmap ic_fluent_delete_24_regular {
             get {
                 object obj = ResourceManager.GetObject("ic_fluent_delete_24_regular", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ic_fluent_dismiss_24_regular {
+            get {
+                object obj = ResourceManager.GetObject("ic_fluent_dismiss_24_regular", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

@@ -150,4 +150,10 @@
   <data name="DatabasesToAdd" xml:space="preserve">
     <value>Databases to Add</value>
   </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="TestConnection" xml:space="preserve">
+    <value>Test Connection</value>
+  </data>
 </root>

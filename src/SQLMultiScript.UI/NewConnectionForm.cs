@@ -19,8 +19,16 @@ namespace SQLMultiScript.UI
 
         private void InitializeForm()
         {
+            var screenSize = Screen.PrimaryScreen.WorkingArea;
+
+            // Define tamanho como 70% da tela
+            int width = (int)(screenSize.Width * 0.3);
+            int height = (int)(screenSize.Height * 0.3);
+            Size = new Size(width, height);
+            ShowInTaskbar = false;
+
             Text = "Nova Conexão";
-            Size = new Size(450, 250);
+
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -30,14 +38,14 @@ namespace SQLMultiScript.UI
             var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(10),
+                Padding = new Padding(UIConstants.PanelPadding),
                 ColumnCount = 2,
                 RowCount = 5,
                 AutoSize = true
             };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65F));
-            for (int i = 0; i < 4; i++) layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            for (int i = 0; i < 4; i++) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // última linha para botões
 
             Controls.Add(layout);
@@ -81,20 +89,49 @@ namespace SQLMultiScript.UI
             var buttonPanel = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.RightToLeft,
-                Dock = DockStyle.Fill,
-                Padding = new Padding(0),
-                AutoSize = true
+                Dock = DockStyle.Bottom,
+                Padding = new Padding(UIConstants.PanelPadding),
+                AutoSize = true,
             };
 
-            btnCancel = new Button { Text = "Cancelar", Width = 90 };
-            btnSave = new Button { Text = "Salvar", Width = 90 };
-            btnTest = new Button { Text = "Testar", Width = 90 };
+            btnCancel = new Button
+            {
+                Width = 50,
+                Image = Images.ic_fluent_dismiss_24_regular,
+                Height = 50,
+            };
+            var toolTipBtnCancel = new ToolTip();
+            toolTipBtnCancel.SetToolTip(btnCancel, Resources.Strings.Cancel);
+
+            btnSave = new Button
+            {
+                Image = Images.ic_fluent_save_24_regular,
+                Dock = DockStyle.Right,
+                Width = 50
+            };
+
+            var toolTipBtnSave = new ToolTip();
+            toolTipBtnSave.SetToolTip(btnSave, Resources.Strings.Save);
+
+
+            btnTest = new Button
+            {
+                Image = Images.ic_fluent_database_plug_connected_20_regular,
+                Dock = DockStyle.Right,
+                Width = 50
+            };
+
+            var toolTipBtnTest = new ToolTip();
+            toolTipBtnTest.SetToolTip(btnTest, Resources.Strings.TestConnection);
+
+
+
 
             btnCancel.Click += (s, e) => DialogResult = DialogResult.Cancel;
             btnSave.Click += BtnSave_Click;
             btnTest.Click += BtnTest_Click;
 
-            buttonPanel.Controls.AddRange(new Control[] { btnCancel, btnSave, btnTest });
+            buttonPanel.Controls.AddRange(new Button[] { btnSave, btnTest, btnCancel });
 
             layout.Controls.Add(buttonPanel, 0, 4);
             layout.SetColumnSpan(buttonPanel, 2);
