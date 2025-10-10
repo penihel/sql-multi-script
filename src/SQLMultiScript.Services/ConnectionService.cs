@@ -13,6 +13,37 @@ namespace SQLMultiScript.Services
         {
             _pathService = pathService;
         }
+
+        public async Task<IList<Connection>> ListAsync()
+        {
+            var directoryPath = _pathService.GetConnectionsPath();
+
+            var retorno = new List<Connection>();
+
+            if (Directory.Exists(directoryPath))
+            {
+                var files = Directory.GetFiles(directoryPath, "*.json", SearchOption.TopDirectoryOnly);
+
+                foreach (var file in files)
+                {
+
+                    if (File.Exists(file))
+                    {
+
+                        var json = await File.ReadAllTextAsync(file);
+                        var item = System.Text.Json.JsonSerializer.Deserialize<Connection>(json);
+                        if (item != null && item.Id != Guid.Empty)
+                        {
+                            item.FilePath = file;
+                            retorno.Add(item);
+                        }
+
+                    }
+                }
+            }
+
+            return retorno;
+        }
         public async Task SaveAsync(Connection connection)
         {
 
@@ -23,9 +54,13 @@ namespace SQLMultiScript.Services
                 connection.DisplayName = connection.Server;
             }
 
+            if (connection.Id == Guid.Empty) { 
+                connection.Id = Guid.NewGuid();
+            }
+
             if (string.IsNullOrEmpty(connection.FilePath))
             {
-                var fileName = connection.DisplayName + ".json";
+                var fileName = connection.Id.ToString() + ".json";
 
 
                 connection.FilePath = Path.Combine(_pathService.GetConnectionsPath(), fileName);

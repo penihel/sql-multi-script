@@ -1,4 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SQLMultiScript.Core.Interfaces;
+using SQLMultiScript.Core.Models;
+using SQLMultiScript.Services;
+using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace SQLMultiScript.UI
@@ -6,13 +10,19 @@ namespace SQLMultiScript.UI
     public class DatabaseDistributionListForm : Form
     {
         private TableLayoutPanel tableLayoutPanel;
-
+        private TreeView treeView;
         private Button btnNew;
+        private readonly IConnectionService _connectionService;
         private readonly IServiceProvider _serviceProvider;
 
-        public DatabaseDistributionListForm(IServiceProvider serviceProvider)
+
+        private BindingList<Connection> _connections;
+        public DatabaseDistributionListForm(
+            IConnectionService connectionService,
+            IServiceProvider serviceProvider)
         {
             InitializeLayout();
+            _connectionService = connectionService;
             _serviceProvider = serviceProvider;
         }
 
@@ -31,6 +41,8 @@ namespace SQLMultiScript.UI
 
             Text = Resources.Strings.DatabaseDistributionLists;
             StartPosition = FormStartPosition.CenterScreen;
+
+            Load += DatabaseDistributionListForm_Load;
 
             tableLayoutPanel = new TableLayoutPanel
             {
@@ -54,6 +66,51 @@ namespace SQLMultiScript.UI
 
 
             SetupDatabaseToAddPanel();
+        }
+
+        private async void DatabaseDistributionListForm_Load(object sender, EventArgs e)
+        {
+            
+
+            await BindData();
+        }
+
+        private async Task LoadConnectionsAsync()
+        {
+
+            _connections =
+                new BindingList<Connection>(await _connectionService.ListAsync());
+            _connections.ListChanged += Connections_ListChanged;
+
+        }
+
+        private async Task BindData()
+        {
+            await LoadConnectionsAsync();
+
+            // Sempre que a lista mudar, atualiza a TreeView
+            UpdateTreeView();
+        }
+        private void Connections_ListChanged(object sender, ListChangedEventArgs e)
+        {
+            // Sempre que a lista mudar, atualiza a TreeView
+            UpdateTreeView();
+        }
+        private void UpdateTreeView()
+        {
+            treeView.BeginUpdate();
+            treeView.Nodes.Clear();
+
+            foreach (var conn in _connections)
+            {
+                var node = new TreeNode(conn.DisplayName)
+                {
+                    Tag = conn // guarda o objeto completo
+                };
+                treeView.Nodes.Add(node);
+            }
+
+            treeView.EndUpdate();
         }
 
         private void SetupDatabaseToAddPanel()
@@ -83,7 +140,7 @@ namespace SQLMultiScript.UI
 
             };
             // TreeView ocupa o topo e se expande
-            var treeView = new TreeView
+            treeView = new TreeView
             {
                 Dock = DockStyle.Fill,
                 BorderStyle = BorderStyle.FixedSingle,
@@ -132,11 +189,16 @@ namespace SQLMultiScript.UI
             
         }
 
-        private void BtnNew_Click(object sender, EventArgs e)
+        private async void BtnNew_Click(object sender, EventArgs e)
         {
             var newConnectionForm = _serviceProvider.GetRequiredService<NewConnectionForm>();
 
             var result = newConnectionForm.ShowDialog(this);
+
+            if (result == DialogResult.OK)
+            {
+                await BindData();
+            }
         }
     }
 }
