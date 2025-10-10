@@ -2,11 +2,9 @@
 {
     public class Database : SelectableItem
     {
-        public string DisplayName { get; set; }
+        public string DatabaseName { get; set; }
 
-        
-
-        public Connection ServerConnection { get; set; }
+        public Connection Connection { get; set; }
 
     }
 }

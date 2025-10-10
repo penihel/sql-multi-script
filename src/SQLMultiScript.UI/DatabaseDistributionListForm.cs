@@ -105,7 +105,10 @@ namespace SQLMultiScript.UI
             {
                 var node = new TreeNode(conn.DisplayName)
                 {
-                    Tag = conn // guarda o objeto completo
+                    Tag = conn, // guarda o objeto completo
+                    // Não marcar checkbox para raiz
+                    Checked = false,
+                    
                 };
                 treeView.Nodes.Add(node);
             }
@@ -146,7 +149,13 @@ namespace SQLMultiScript.UI
                 BorderStyle = BorderStyle.FixedSingle,
                 // adiciona espaço no topo para não encostar no label
                 Margin = new Padding(0, 4, 0, 0),
+
+                CheckBoxes = true
             };
+            treeView.AfterCheck += TreeView_AfterCheck;
+
+            treeView.NodeMouseDoubleClick += TreeView_NodeMouseDoubleClick;
+
 
             // Painel de botões no rodapé
             var buttonPanel = new Panel
@@ -188,6 +197,87 @@ namespace SQLMultiScript.UI
 
             
         }
+
+        private async void TreeView_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            // Só processa se o node for raiz (não tiver filhos ainda)
+            if (e.Node.Level == 0 && e.Node.Nodes.Count == 0)
+            {
+                if (e.Node.Tag is Connection conn)
+                {
+                    try
+                    {
+                        // Busca bancos da conexão
+                        var databases = await _connectionService.ListDatabasesAsync(conn);
+
+                        // Adiciona cada banco como node filho
+                        foreach (var db in databases)
+                        {
+                            var dbNode = new TreeNode(db.DatabaseName)
+                            {
+                                Tag = new { Connection = conn, Database = db }, // guarda info
+                                Checked = false
+                            };
+                            e.Node.Nodes.Add(dbNode);
+                        }
+
+                        // Expande automaticamente
+                        e.Node.Expand();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Erro ao carregar bancos:\n{ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void TreeView_AfterCheck(object sender, TreeViewEventArgs e)
+        {
+            // Evita recursão infinita
+            treeView.AfterCheck -= TreeView_AfterCheck;
+
+            try
+            {
+                // Atualiza filhos
+                if (e.Node.Nodes.Count > 0)
+                {
+                    foreach (TreeNode child in e.Node.Nodes)
+                    {
+                        child.Checked = e.Node.Checked;
+                    }
+                }
+
+                // Atualiza pai (recursivamente)
+                UpdateParentCheckState(e.Node);
+            }
+            finally
+            {
+                treeView.AfterCheck += TreeView_AfterCheck;
+            }
+        }
+
+        // Marca o pai se todos os filhos estiverem selecionados, desmarca caso contrário
+        private void UpdateParentCheckState(TreeNode node)
+        {
+            if (node.Parent == null) return;
+
+            bool allChecked = true;
+            foreach (TreeNode sibling in node.Parent.Nodes)
+            {
+                if (!sibling.Checked)
+                {
+                    allChecked = false;
+                    break;
+                }
+            }
+
+            node.Parent.Checked = allChecked;
+
+            // Propaga para cima
+            UpdateParentCheckState(node.Parent);
+        }
+
 
         private async void BtnNew_Click(object sender, EventArgs e)
         {

@@ -6,8 +6,9 @@ namespace SQLMultiScript.Core.Interfaces
     {
         Task SaveAsync(Connection connection);
         Task<IList<Connection>> ListAsync();
+        Task<IList<Database>> ListDatabasesAsync(Connection connection);
 
-        string BuildConnectionString(Connection connection);
+        Task TestAsync(Connection connection);
     }
 }
     

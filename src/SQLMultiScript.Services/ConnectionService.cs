@@ -2,6 +2,7 @@
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using System.Data.Common;
 
 namespace SQLMultiScript.Services
 {
@@ -44,6 +45,48 @@ namespace SQLMultiScript.Services
 
             return retorno;
         }
+
+        public async Task<IList<Database>> ListDatabasesAsync(Connection connection)
+        {
+            var databases = new List<Database>();
+
+            if (connection == null)
+                throw new ArgumentNullException(nameof(connection));
+
+            var connString = BuildConnectionString(connection);
+
+            try
+            {
+                using var sqlConnection = new SqlConnection(connString);
+                await sqlConnection.OpenAsync();
+
+                // Consulta todos os bancos no servidor
+                var command = new SqlCommand(
+                    "SELECT name FROM sys.databases WHERE database_id > 4 ORDER BY name", // ignora system DBs
+                    sqlConnection
+                );
+
+                using var reader = await command.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    var db = new Database
+                    {
+                        DatabaseName = reader.GetString(0),
+                        Connection = connection
+                    };
+                    databases.Add(db);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Aqui você pode logar ou propagar a exceção
+                throw new InvalidOperationException($"Erro ao listar bancos do servidor {connection.DisplayName}", ex);
+            }
+
+            return databases;
+        }
+
         public async Task SaveAsync(Connection connection)
         {
 
@@ -54,7 +97,8 @@ namespace SQLMultiScript.Services
                 connection.DisplayName = connection.Server;
             }
 
-            if (connection.Id == Guid.Empty) { 
+            if (connection.Id == Guid.Empty)
+            {
                 connection.Id = Guid.NewGuid();
             }
 
@@ -77,7 +121,17 @@ namespace SQLMultiScript.Services
 
         }
 
-        public string BuildConnectionString(Connection connection)
+        public async Task TestAsync(Connection connection)
+        {
+            var connString = BuildConnectionString(connection);
+
+            using var conn = new SqlConnection(connString);
+            await conn.OpenAsync();
+            await conn.CloseAsync();
+
+        }
+
+        private string BuildConnectionString(Connection connection)
         {
             string server = connection.Server.Trim();
 
@@ -85,7 +139,7 @@ namespace SQLMultiScript.Services
 
             var username = connection.UserName.Trim();
 
-            var password = connection.Password.Trim();
+            var password = connection.Password?.Trim();
 
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
             {

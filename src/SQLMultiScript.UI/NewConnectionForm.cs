@@ -12,7 +12,7 @@ namespace SQLMultiScript.UI
         private ComboBox cmbAuthentication;
         private Button btnTest, btnSave, btnCancel;
 
-        
+
 
         private readonly IConnectionService _connectionService;
         private readonly BindingSource _bindingSource;
@@ -24,7 +24,7 @@ namespace SQLMultiScript.UI
 
             // Instancia o modelo e o BindingSource
             _connection = new Connection();
-            
+
             _bindingSource = new BindingSource { DataSource = _connection };
 
             InitializeForm();
@@ -35,7 +35,7 @@ namespace SQLMultiScript.UI
             // Faz o binding dos campos com as propriedades do modelo
             txtDisplayName.DataBindings.Add(nameof(txtDisplayName.Text), _bindingSource, nameof(Connection.DisplayName), false, DataSourceUpdateMode.OnPropertyChanged);
             txtServer.DataBindings.Add(nameof(txtServer.Text), _bindingSource, nameof(Connection.Server), false, DataSourceUpdateMode.OnPropertyChanged);
-            cmbAuthentication.DataBindings.Add(nameof(cmbAuthentication.SelectedItem),_bindingSource,nameof(Connection.Auth),false,DataSourceUpdateMode.OnPropertyChanged);
+            cmbAuthentication.DataBindings.Add(nameof(cmbAuthentication.SelectedItem), _bindingSource, nameof(Connection.Auth), false, DataSourceUpdateMode.OnPropertyChanged);
             txtUsername.DataBindings.Add(nameof(txtUsername.Text), _bindingSource, nameof(Connection.UserName), false, DataSourceUpdateMode.OnPropertyChanged);
             txtPassword.DataBindings.Add(nameof(txtPassword.Text), _bindingSource, nameof(Connection.Password), false, DataSourceUpdateMode.OnPropertyChanged);
         }
@@ -78,7 +78,7 @@ namespace SQLMultiScript.UI
             lblDisplayName = new Label { Text = "Nome:", AutoSize = true, Anchor = AnchorStyles.Left };
             txtDisplayName = new TextBox { Dock = DockStyle.Fill };
 
-            
+
             lblServer = new Label { Text = "Servidor:", AutoSize = true, Anchor = AnchorStyles.Left };
             txtServer = new TextBox { Dock = DockStyle.Fill };
 
@@ -198,11 +198,11 @@ namespace SQLMultiScript.UI
 
         private async void BtnTest_Click(object sender, EventArgs e)
         {
-            var connString = _connectionService.BuildConnectionString(_connection);
+
             try
             {
-                using var conn = new SqlConnection(connString);
-                await conn.OpenAsync();
+                await _connectionService.TestAsync(_connection);
+
                 MessageBox.Show("Conexão bem sucedida!", "Teste", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -213,15 +213,15 @@ namespace SQLMultiScript.UI
 
         private async void BtnSave_Click(object sender, EventArgs e)
         {
-            
 
-            
+
+
 
             await _connectionService.SaveAsync(_connection);
-            
+
             DialogResult = DialogResult.OK;
         }
 
-        
+
     }
 }
