@@ -61,7 +61,7 @@ namespace SQLMultiScript.UI
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50f));
 
-            
+
             Controls.Add(tableLayoutPanel);
 
 
@@ -70,7 +70,7 @@ namespace SQLMultiScript.UI
 
         private async void DatabaseDistributionListForm_Load(object sender, EventArgs e)
         {
-            
+
 
             await BindData();
         }
@@ -107,8 +107,9 @@ namespace SQLMultiScript.UI
                 {
                     Tag = conn, // guarda o objeto completo
                     // Não marcar checkbox para raiz
-                    Checked = false,
-                    
+                    ImageKey = "disconnected",
+                    SelectedImageKey = "disconnected"
+
                 };
                 treeView.Nodes.Add(node);
             }
@@ -156,6 +157,16 @@ namespace SQLMultiScript.UI
 
             treeView.NodeMouseDoubleClick += TreeView_NodeMouseDoubleClick;
 
+            ImageList imageList = new ImageList();
+            imageList.ImageSize = new Size(16, 16);
+
+            
+            imageList.Images.Add("disconnected", Images.circle_red);
+            imageList.Images.Add("connected", Images.circle_green);
+            imageList.Images.Add("database", Images.ic_fluent_database_24_regular);
+            
+            treeView.ImageList = imageList;
+
 
             // Painel de botões no rodapé
             var buttonPanel = new Panel
@@ -177,25 +188,25 @@ namespace SQLMultiScript.UI
             };
             btnNew.Click += BtnNew_Click;
             var toolTipBtnNew = new ToolTip();
-            toolTipBtnNew.SetToolTip(btnNew, Resources.Strings.New);
+            toolTipBtnNew.SetToolTip(btnNew, Resources.Strings.NewConnection);
             buttonPanel.Controls.Add(btnNew);
 
 
-            
+
             buttonPanel.Controls.Add(btnNew);
 
 
             // Monta painel
             panelTreeView.Controls.Add(treeView);
             panelTreeView.Controls.Add(label);
-            
+
             panel.Controls.Add(panelTreeView);
             panel.Controls.Add(buttonPanel);
 
             // Adiciona no TableLayout
             tableLayoutPanel.Controls.Add(panel, 0, 0);
 
-            
+
         }
 
         private async void TreeView_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -216,11 +227,17 @@ namespace SQLMultiScript.UI
                             var dbNode = new TreeNode(db.DatabaseName)
                             {
                                 Tag = new { Connection = conn, Database = db }, // guarda info
-                                Checked = false
+                                Checked = false,
+                                
+                                ImageKey = "database",
+                                SelectedImageKey = "database"
                             };
                             e.Node.Nodes.Add(dbNode);
                         }
-
+                        
+                        e.Node.ImageKey = "connected";
+                        e.Node.SelectedImageKey = "connected";
+                        
                         // Expande automaticamente
                         e.Node.Expand();
                     }

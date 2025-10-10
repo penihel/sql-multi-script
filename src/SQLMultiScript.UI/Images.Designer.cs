@@ -63,6 +63,26 @@ namespace SQLMultiScript.UI {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap circle_green {
+            get {
+                object obj = ResourceManager.GetObject("circle_green", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap circle_red {
+            get {
+                object obj = ResourceManager.GetObject("circle_red", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap ic_fluent_add_24_regular {
             get {
                 object obj = ResourceManager.GetObject("ic_fluent_add_24_regular", resourceCulture);
@@ -86,6 +106,16 @@ namespace SQLMultiScript.UI {
         internal static System.Drawing.Bitmap ic_fluent_arrow_circle_up_24_regular {
             get {
                 object obj = ResourceManager.GetObject("ic_fluent_arrow_circle_up_24_regular", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ic_fluent_database_24_regular {
+            get {
+                object obj = ResourceManager.GetObject("ic_fluent_database_24_regular", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

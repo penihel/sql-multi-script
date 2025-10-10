@@ -156,4 +156,7 @@
   <data name="TestConnection" xml:space="preserve">
     <value>Test Connection</value>
   </data>
+  <data name="NewConnection" xml:space="preserve">
+    <value>New Connection</value>
+  </data>
 </root>

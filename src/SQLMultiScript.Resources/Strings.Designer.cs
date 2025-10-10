@@ -133,6 +133,15 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to New Connection.
+        /// </summary>
+        public static string NewConnection {
+            get {
+                return ResourceManager.GetString("NewConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Remove.
         /// </summary>
         public static string Remove {

@@ -1,4 +1,5 @@
-﻿namespace SQLMultiScript.Core
+﻿
+namespace SQLMultiScript.Core
 {
     public static class Constants
     {
@@ -11,8 +12,8 @@
         public const string MicrosoftEntraMFA = "Microsoft Entra MFA";
         public const string MicrosoftEntraIntegrated = "Microsoft Entra Integrated";
         public const string MicrosoftEntraPassword = "Microsoft Entra Password";
-        
-        
+
+
         
     }
 }
