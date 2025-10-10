@@ -5,12 +5,17 @@ namespace SQLMultiScript.Services
 {
     public class DatabaseDistributionListService : IDatabaseDistributionListService
     {
-        public DatabaseDistributionListService()
+        
+        private readonly IPathService _pathService;
+
+        public DatabaseDistributionListService(IPathService pathService)
         {
-            
+            _pathService = pathService;
         }
-        public async Task<IList<DatabaseDistributionList>> ListAsync(string directoryPath)
-        {   
+        public async Task<IList<DatabaseDistributionList>> ListAsync()
+        {
+            var directoryPath = _pathService.GetDatabaseDistributionListsPath();
+
             var retorno = new List<DatabaseDistributionList>();
 
             if (Directory.Exists(directoryPath))

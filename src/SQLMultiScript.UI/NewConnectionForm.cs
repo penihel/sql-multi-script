@@ -1,5 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
+using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
+using SQLMultiScript.Core.Models;
 
 namespace SQLMultiScript.UI
 {
@@ -10,14 +12,32 @@ namespace SQLMultiScript.UI
         private ComboBox cmbAuthentication;
         private Button btnTest, btnSave, btnCancel;
 
-        //public string ConnectionName { get; private set; }
-        //public string ConnectionString { get; private set; }
+        
 
         private readonly IConnectionService _connectionService;
+        private readonly BindingSource _bindingSource;
+        private readonly Connection _connection;
+
         public NewConnectionForm(IConnectionService connectionService)
         {
-            InitializeForm();
             _connectionService = connectionService;
+
+            // Instancia o modelo e o BindingSource
+            _connection = new Connection();
+            
+            _bindingSource = new BindingSource { DataSource = _connection };
+
+            InitializeForm();
+            InitializeBindings();
+        }
+        private void InitializeBindings()
+        {
+            // Faz o binding dos campos com as propriedades do modelo
+            txtDisplayName.DataBindings.Add(nameof(txtDisplayName.Text), _bindingSource, nameof(Connection.DisplayName), false, DataSourceUpdateMode.OnPropertyChanged);
+            txtServer.DataBindings.Add(nameof(txtServer.Text), _bindingSource, nameof(Connection.Server), false, DataSourceUpdateMode.OnPropertyChanged);
+            cmbAuthentication.DataBindings.Add(nameof(cmbAuthentication.SelectedItem),_bindingSource,nameof(Connection.Auth),false,DataSourceUpdateMode.OnPropertyChanged);
+            txtUsername.DataBindings.Add(nameof(txtUsername.Text), _bindingSource, nameof(Connection.UserName), false, DataSourceUpdateMode.OnPropertyChanged);
+            txtPassword.DataBindings.Add(nameof(txtPassword.Text), _bindingSource, nameof(Connection.Password), false, DataSourceUpdateMode.OnPropertyChanged);
         }
 
         private void InitializeForm()
@@ -66,11 +86,11 @@ namespace SQLMultiScript.UI
             cmbAuthentication = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
             cmbAuthentication.Items.AddRange(new string[]
             {
-                "Windows Authentication",
-                "SQL Server Authentication",
-                "Microsoft Entra MFA",
-                "Microsoft Entra Integrated",
-                "Microsoft Entra Password"
+                Constants.WindowsAuthentication,
+                Constants.SQLServerAuthentication,
+                Constants.MicrosoftEntraMFA,
+                Constants.MicrosoftEntraIntegrated,
+                Constants.MicrosoftEntraPassword
             });
             cmbAuthentication.SelectedIndex = 0;
             cmbAuthentication.SelectedIndexChanged += CmbAuthentication_SelectedIndexChanged;
@@ -164,12 +184,12 @@ namespace SQLMultiScript.UI
 
             switch (auth)
             {
-                case "SQL Server Authentication":
-                case "Microsoft Entra Password":
+                case Constants.SQLServerAuthentication:
+                case Constants.MicrosoftEntraPassword:
                     txtUsername.Enabled = true;
                     txtPassword.Enabled = true;
                     break;
-                case "Microsoft Entra MFA":
+                case Constants.MicrosoftEntraMFA:
                     txtUsername.Enabled = true;
                     txtPassword.Enabled = false;
                     break;
@@ -178,7 +198,7 @@ namespace SQLMultiScript.UI
 
         private async void BtnTest_Click(object sender, EventArgs e)
         {
-            var connString = BuildConnectionString();
+            var connString = _connectionService.BuildConnectionString(_connection);
             try
             {
                 using var conn = new SqlConnection(connString);
@@ -191,51 +211,17 @@ namespace SQLMultiScript.UI
             }
         }
 
-        private void BtnSave_Click(object sender, EventArgs e)
+        private async void BtnSave_Click(object sender, EventArgs e)
         {
-            //ConnectionString = BuildConnectionString();
-            //ConnectionName = txtServer.Text;
+            
+
+            
+
+            await _connectionService.SaveAsync(_connection);
+            
             DialogResult = DialogResult.OK;
         }
 
-        private string BuildConnectionString()
-        {
-            string server = txtServer.Text.Trim();
-            string auth = cmbAuthentication.SelectedItem.ToString();
-
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
-            {
-                DataSource = server,
-                InitialCatalog = "master",
-                ConnectTimeout = 5
-            };
-
-            switch (auth)
-            {
-                case "Windows Authentication":
-                    builder.IntegratedSecurity = true;
-                    break;
-                case "SQL Server Authentication":
-                    builder.UserID = txtUsername.Text;
-                    builder.Password = txtPassword.Text;
-                    builder.IntegratedSecurity = false;
-                    break;
-                case "Microsoft Entra MFA":
-                    builder.Authentication = SqlAuthenticationMethod.ActiveDirectoryInteractive;
-                    if (!string.IsNullOrWhiteSpace(txtUsername.Text))
-                        builder.UserID = txtUsername.Text;
-                    break;
-                case "Microsoft Entra Integrated":
-                    builder.Authentication = SqlAuthenticationMethod.ActiveDirectoryIntegrated;
-                    break;
-                case "Microsoft Entra Password":
-                    builder.Authentication = SqlAuthenticationMethod.ActiveDirectoryPassword;
-                    builder.UserID = txtUsername.Text;
-                    builder.Password = txtPassword.Text;
-                    break;
-            }
-
-            return builder.ConnectionString;
-        }
+        
     }
 }

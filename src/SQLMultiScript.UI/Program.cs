@@ -25,8 +25,9 @@ namespace SQLMultiScript.UI
             services.AddSingleton<IProjectService, ProjectService>();
             services.AddSingleton<IDatabaseDistributionListService, DatabaseDistributionListService>();
             services.AddSingleton<IConnectionService, ConnectionService>();
-
+            services.AddSingleton<IPathService, PathService>();
             
+
             // Registrar um ILogger genérico com categoria "SQLMultiScript"
             services.AddSingleton(provider =>
             {

@@ -723,13 +723,11 @@ namespace SQLMultiScript.UI
         {
 
 
-            var databaseDistributionListsPath = Path.Combine(GetAppDataPath(), "DatabaseDistributionLists");
+            
 
-            if (!Directory.Exists(databaseDistributionListsPath))
-                Directory.CreateDirectory(databaseDistributionListsPath);
-
+            
             _databaseDistributionLists =
-                new BindingList<DatabaseDistributionList>(await _databaseDistributionListService.ListAsync(databaseDistributionListsPath));
+                new BindingList<DatabaseDistributionList>(await _databaseDistributionListService.ListAsync());
 
 
         }
@@ -959,16 +957,7 @@ namespace SQLMultiScript.UI
 
         }
 
-        private string GetAppDataPath()
-        {
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string appFolder = Path.Combine(appData, Constants.ApplicationName);
-            if (!Directory.Exists(appFolder))
-            {
-                Directory.CreateDirectory(appFolder);
-            }
-            return appFolder;
-        }
+        
         private void Log(string message, bool isError = false)
         {
             string prefix = isError ? "[ERRO]" : "[INFO]";

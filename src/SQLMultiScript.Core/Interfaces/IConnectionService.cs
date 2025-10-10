@@ -4,8 +4,9 @@ namespace SQLMultiScript.Core.Interfaces
 {
     public interface IConnectionService
     {
-        Task SaveAsync(Connection connection, string filePath);
+        Task SaveAsync(Connection connection);
 
+        string BuildConnectionString(Connection connection);
     }
 }
     
