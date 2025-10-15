@@ -20,18 +20,32 @@ namespace SQLMultiScript.UI
         private BindingList<DatabaseDistributionList> _databaseDistributionLists;
 
         // Componentes
-        private SplitContainer splitMain, splitLeft, splitCenterRight, splitResultFooter;
-        private DataGridView dataGridViewScripts, dataGridViewDatabases;
+        private SplitContainer 
+            splitMain, 
+            splitLeft, 
+            splitCenterRight, 
+            splitResultFooter;
+        
+        private DataGridView 
+            dataGridViewScripts, 
+            dataGridViewDatabases;
+        
         private Scintilla sqlEditor;
         private TextBox logBox;
         private MenuStrip menuStrip;
-        private ToolStripMenuItem executarMenu;
-        private Button btnUp, btnDown, btnAdd, btnNew, btnSave, btnRemove, btnDatabaseDistributionList;
+        
+        private Button 
+            btnUp, 
+            btnDown, 
+            btnAdd, 
+            btnNew, 
+            btnSave, 
+            btnRemove, 
+            btnDatabaseDistributionList;
+
         private ComboBox comboBoxDatabaseDistributionList;
 
-        //forms
-        DatabaseDistributionListForm databaseDistributionListForm;
-
+        
 
         public MainForm(
             ILogger logger,
@@ -52,6 +66,7 @@ namespace SQLMultiScript.UI
         {
             
             Text = $"{Constants.ApplicationName} - {Constants.ApplicationVersion}";
+            Icon = new Icon("sql-multi-script.ico");
             WindowState = FormWindowState.Maximized;
             Load += MainForm_Load;
 
@@ -178,12 +193,12 @@ namespace SQLMultiScript.UI
             var topTableLayoutPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 50,
+                Height = 60,
                 ColumnCount = 2,
                 RowCount = 1,
             };
             topTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Combo ocupa o espaço todo
-            topTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 50F)); // Botão fixo em 50px
+            topTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60F)); // Botão fixo em 50px
 
             // Cria o ComboBox
             comboBoxDatabaseDistributionList = new ComboBox
@@ -203,7 +218,7 @@ namespace SQLMultiScript.UI
             {
                 Dock = DockStyle.Right,
                 Image = Images.ic_fluent_database_stack_16_regular,
-                Width = 50
+                Size = UIConstants.ButtonSize,
             };
             var toolTipBtn = new ToolTip();
             toolTipBtn.SetToolTip(btnDatabaseDistributionList, Resources.Strings.DatabaseDistributionLists);
@@ -309,7 +324,7 @@ namespace SQLMultiScript.UI
             var buttonPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 50,
+                Height = 60,
                 Padding = new Padding(UIConstants.PanelPadding)
             };
 
@@ -321,7 +336,7 @@ namespace SQLMultiScript.UI
 
                 Dock = DockStyle.Left,
                 Image = Images.ic_fluent_arrow_circle_down_24_regular,
-                Width = 50
+                Size = UIConstants.ButtonSize,
             };
             btnDown.Click += BtnDown_Click;
             var toolTipBtnDown = new ToolTip();
@@ -333,7 +348,7 @@ namespace SQLMultiScript.UI
 
                 Dock = DockStyle.Left,
                 Image = Images.ic_fluent_arrow_circle_up_24_regular,
-                Width = 50
+                Size = UIConstants.ButtonSize
             };
             btnUp.Click += BtnUp_Click;
             var toolTipBtnUp = new ToolTip();
@@ -345,7 +360,7 @@ namespace SQLMultiScript.UI
 
                 Dock = DockStyle.Left,
                 Image = Images.ic_fluent_delete_24_regular,               
-                Width = 50
+                Size = UIConstants.ButtonSize
 
             };
             btnRemove.Click += BtnRemove_Click;
@@ -366,7 +381,7 @@ namespace SQLMultiScript.UI
 
                 Dock = DockStyle.Right,
                 Image = Images.ic_fluent_new_24_regular,
-                Width = 50
+                Size = UIConstants.ButtonSize
             };
             btnNew.Click += BtnNew_Click;
             var toolTipBtnNew = new ToolTip();
@@ -380,7 +395,7 @@ namespace SQLMultiScript.UI
 
                 Dock = DockStyle.Right,
                 Image = Images.ic_fluent_add_24_regular,                
-                Width = 50
+                Size = UIConstants.ButtonSize
 
             };
             btnAdd.Click += BtnAdd_Click;
@@ -505,7 +520,7 @@ namespace SQLMultiScript.UI
             {
                 Dock = DockStyle.Top,
                 Padding = new Padding(UIConstants.PanelPadding),
-                Height = 50,
+                Height = 60,
             };
 
             // Botão Salvar no canto direito
@@ -513,7 +528,7 @@ namespace SQLMultiScript.UI
             {
                 Image = Images.ic_fluent_save_24_regular,
                 Dock = DockStyle.Right,
-                Width = 50
+                Size = UIConstants.ButtonSize
             };
             btnSave.Click += BtnSave_Click;
             var toolTipBtnSave = new ToolTip();

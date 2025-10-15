@@ -103,6 +103,26 @@ namespace SQLMultiScript.UI {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap ic_fluent_arrow_circle_left_24_regular {
+            get {
+                object obj = ResourceManager.GetObject("ic_fluent_arrow_circle_left_24_regular", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ic_fluent_arrow_circle_right_24_regular {
+            get {
+                object obj = ResourceManager.GetObject("ic_fluent_arrow_circle_right_24_regular", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap ic_fluent_arrow_circle_up_24_regular {
             get {
                 object obj = ResourceManager.GetObject("ic_fluent_arrow_circle_up_24_regular", resourceCulture);

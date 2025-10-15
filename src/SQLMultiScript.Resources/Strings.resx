@@ -159,4 +159,16 @@
   <data name="NewConnection" xml:space="preserve">
     <value>New Connection</value>
   </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="DatabasesToExecute" xml:space="preserve">
+    <value>Databases to Execute</value>
+  </data>
+  <data name="NewDatabaseDistributionList" xml:space="preserve">
+    <value>New Database Distribution List</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
 </root>

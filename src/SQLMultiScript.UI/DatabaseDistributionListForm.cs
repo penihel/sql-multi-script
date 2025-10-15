@@ -1,17 +1,22 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
-using SQLMultiScript.Services;
 using System.ComponentModel;
-using System.Windows.Forms;
 
 namespace SQLMultiScript.UI
 {
     public class DatabaseDistributionListForm : Form
     {
         private TableLayoutPanel tableLayoutPanel;
-        private TreeView treeView;
-        private Button btnNew;
+        private TreeView treeViewToAdd, treeViewToExecute;
+        private Button 
+            btnNew, 
+            btnAdd, 
+            btnRemove,
+            btnNewDatabaseDistribuitionList,
+            btnRemoveDatabaseDistribuitionList,
+            btnRenameDatabaseDistribuitionList;
+        
         private readonly IConnectionService _connectionService;
         private readonly IServiceProvider _serviceProvider;
 
@@ -28,9 +33,13 @@ namespace SQLMultiScript.UI
 
         private void InitializeLayout()
         {
+            
+            ShowInTaskbar = false;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
-            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.CenterParent;
+
 
             var screenSize = Screen.PrimaryScreen.WorkingArea;
 
@@ -65,7 +74,138 @@ namespace SQLMultiScript.UI
             Controls.Add(tableLayoutPanel);
 
 
-            SetupDatabaseToAddPanel();
+            SetupLeftColumn();
+            SetupCenterColumn();
+            SetupRightColumn();
+        }
+
+        private void SetupRightColumn()
+        {
+            // -----------------------
+            // Painel de Botões
+            // -----------------------
+            var buttonPanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 60,
+                Padding = new Padding(UIConstants.PanelPadding)
+            };
+
+            btnNewDatabaseDistribuitionList = new Button
+            {
+
+                Dock = DockStyle.Right,
+                Image = Images.ic_fluent_new_24_regular,
+                Size = UIConstants.ButtonSize
+            };
+            
+            var toolTipBtnNew = new ToolTip();
+            toolTipBtnNew.SetToolTip(btnNewDatabaseDistribuitionList, Resources.Strings.NewDatabaseDistributionList);
+            
+            buttonPanel.Controls.Add(btnNewDatabaseDistribuitionList);
+
+
+            //
+            btnRenameDatabaseDistribuitionList = new Button
+            {
+
+                Dock = DockStyle.Right,
+                Image = Images.ic_fluent_delete_24_regular,
+                Size = UIConstants.ButtonSize
+            };
+
+            var toolTipBtnRename = new ToolTip();
+            toolTipBtnRename.SetToolTip(btnRenameDatabaseDistribuitionList, Resources.Strings.Rename);
+
+            buttonPanel.Controls.Add(btnRenameDatabaseDistribuitionList);
+
+
+            //
+            btnRemoveDatabaseDistribuitionList = new Button
+            {
+
+                Dock = DockStyle.Right,
+                Image = Images.ic_fluent_delete_24_regular,
+                Size = UIConstants.ButtonSize
+            };
+            
+            var toolTipBtnRemove = new ToolTip();
+            toolTipBtnRemove.SetToolTip(btnRemoveDatabaseDistribuitionList, Resources.Strings.Remove);
+
+            buttonPanel.Controls.Add(btnRemoveDatabaseDistribuitionList);
+
+            
+            
+            // Adiciona no TableLayout
+            tableLayoutPanel.Controls.Add(buttonPanel, 2, 0);
+        }
+
+        private void SetupCenterColumn()
+        {
+            
+            var panel = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.TopDown,
+                Anchor = AnchorStyles.None, // <- ESSENCIAL
+                Padding = new Padding(UIConstants.PanelPadding),
+                
+                
+                
+            };
+
+
+            
+
+
+            // Botões
+            btnAdd = new Button
+            {
+
+                
+                Image = Images.ic_fluent_arrow_circle_right_24_regular,
+                Size = UIConstants.ButtonSize,
+            };
+            btnAdd.Click += BtnAdd_Click;
+            var toolTipBtnAdd = new ToolTip();
+            toolTipBtnAdd.SetToolTip(btnAdd, Resources.Strings.Add);
+
+
+            btnRemove = new Button
+            {
+
+               
+                Image = Images.ic_fluent_arrow_circle_left_24_regular,
+                Size = UIConstants.ButtonSize,
+            };
+            btnRemove.Click += BtnRemove_Click;
+            var toolTipBtnRemove = new ToolTip();
+            toolTipBtnRemove.SetToolTip(btnRemove, Resources.Strings.Remove);
+
+
+            panel.Controls.Add(btnAdd);
+            panel.Controls.Add(btnRemove);
+
+
+
+            
+
+            // Adiciona no TableLayout
+            tableLayoutPanel.Controls.Add(panel, 1, 0);
+
+            
+
+        }
+
+        private void BtnRemove_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void BtnAdd_Click(object sender, EventArgs e)
+        {
+            
         }
 
         private async void DatabaseDistributionListForm_Load(object sender, EventArgs e)
@@ -98,8 +238,8 @@ namespace SQLMultiScript.UI
         }
         private void UpdateTreeView()
         {
-            treeView.BeginUpdate();
-            treeView.Nodes.Clear();
+            treeViewToAdd.BeginUpdate();
+            treeViewToAdd.Nodes.Clear();
 
             foreach (var conn in _connections)
             {
@@ -111,13 +251,13 @@ namespace SQLMultiScript.UI
                     SelectedImageKey = "disconnected"
 
                 };
-                treeView.Nodes.Add(node);
+                treeViewToAdd.Nodes.Add(node);
             }
 
-            treeView.EndUpdate();
+            treeViewToAdd.EndUpdate();
         }
 
-        private void SetupDatabaseToAddPanel()
+        private void SetupLeftColumn()
         {
 
             // Painel da célula (coluna 1, linha 1 → índice 0,0)
@@ -144,7 +284,7 @@ namespace SQLMultiScript.UI
 
             };
             // TreeView ocupa o topo e se expande
-            treeView = new TreeView
+            treeViewToAdd = new TreeView
             {
                 Dock = DockStyle.Fill,
                 BorderStyle = BorderStyle.FixedSingle,
@@ -153,9 +293,9 @@ namespace SQLMultiScript.UI
 
                 CheckBoxes = true
             };
-            treeView.AfterCheck += TreeView_AfterCheck;
+            treeViewToAdd.AfterCheck += TreeView_AfterCheck;
 
-            treeView.NodeMouseDoubleClick += TreeView_NodeMouseDoubleClick;
+            treeViewToAdd.NodeMouseDoubleClick += TreeView_NodeMouseDoubleClick;
 
             ImageList imageList = new ImageList();
             imageList.ImageSize = new Size(16, 16);
@@ -165,7 +305,7 @@ namespace SQLMultiScript.UI
             imageList.Images.Add("connected", Images.circle_green);
             imageList.Images.Add("database", Images.ic_fluent_database_24_regular);
             
-            treeView.ImageList = imageList;
+            treeViewToAdd.ImageList = imageList;
 
 
             // Painel de botões no rodapé
@@ -174,7 +314,7 @@ namespace SQLMultiScript.UI
                 Dock = DockStyle.Bottom,
 
                 Padding = new Padding(UIConstants.PanelPadding),
-                Height = 50,
+                Height = 60,
             };
 
 
@@ -184,7 +324,7 @@ namespace SQLMultiScript.UI
 
                 Dock = DockStyle.Right,
                 Image = Images.ic_fluent_new_24_regular,
-                Width = 50
+                Size = UIConstants.ButtonSize,
             };
             btnNew.Click += BtnNew_Click;
             var toolTipBtnNew = new ToolTip();
@@ -197,7 +337,7 @@ namespace SQLMultiScript.UI
 
 
             // Monta painel
-            panelTreeView.Controls.Add(treeView);
+            panelTreeView.Controls.Add(treeViewToAdd);
             panelTreeView.Controls.Add(label);
 
             panel.Controls.Add(panelTreeView);
@@ -252,7 +392,7 @@ namespace SQLMultiScript.UI
         private void TreeView_AfterCheck(object sender, TreeViewEventArgs e)
         {
             // Evita recursão infinita
-            treeView.AfterCheck -= TreeView_AfterCheck;
+            treeViewToAdd.AfterCheck -= TreeView_AfterCheck;
 
             try
             {
@@ -270,7 +410,7 @@ namespace SQLMultiScript.UI
             }
             finally
             {
-                treeView.AfterCheck += TreeView_AfterCheck;
+                treeViewToAdd.AfterCheck += TreeView_AfterCheck;
             }
         }
 

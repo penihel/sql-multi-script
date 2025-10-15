@@ -61,6 +61,15 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Add.
+        /// </summary>
+        public static string Add {
+            get {
+                return ResourceManager.GetString("Add", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Add Existing.
         /// </summary>
         public static string AddExisting {
@@ -106,6 +115,15 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Databases to Execute.
+        /// </summary>
+        public static string DatabasesToExecute {
+            get {
+                return ResourceManager.GetString("DatabasesToExecute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Down.
         /// </summary>
         public static string Down {
@@ -142,6 +160,15 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to New Database Distribution List.
+        /// </summary>
+        public static string NewDatabaseDistributionList {
+            get {
+                return ResourceManager.GetString("NewDatabaseDistributionList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Remove.
         /// </summary>
         public static string Remove {
@@ -156,6 +183,15 @@ namespace SQLMultiScript.Resources {
         public static string RemoveSelectedRows {
             get {
                 return ResourceManager.GetString("RemoveSelectedRows", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Rename.
+        /// </summary>
+        public static string Rename {
+            get {
+                return ResourceManager.GetString("Rename", resourceCulture);
             }
         }
         

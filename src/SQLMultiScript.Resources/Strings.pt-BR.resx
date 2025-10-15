@@ -148,7 +148,7 @@
     <value>Remover</value>
   </data>
   <data name="DatabasesToAdd" xml:space="preserve">
-    <value>Banco de dados à adicionar</value>
+    <value>Banco de dados para adicionar</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Cancelar</value>
@@ -158,5 +158,17 @@
   </data>
   <data name="NewConnection" xml:space="preserve">
     <value>Nova conexão</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Adicionar</value>
+  </data>
+  <data name="DatabasesToExecute" xml:space="preserve">
+    <value>Banco de dados para executar</value>
+  </data>
+  <data name="NewDatabaseDistributionList" xml:space="preserve">
+    <value>Nova lista de distribuição de Banco de Dados</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Renomear</value>
   </data>
 </root>
