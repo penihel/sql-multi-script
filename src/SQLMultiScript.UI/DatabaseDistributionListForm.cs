@@ -1,12 +1,19 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using SQLMultiScript.Services;
 using System.ComponentModel;
 
 namespace SQLMultiScript.UI
 {
     public class DatabaseDistributionListForm : Form
     {
+        private readonly IDatabaseDistributionListService _databaseDistributionListService;
+        private readonly IConnectionService _connectionService;
+        private readonly IServiceProvider _serviceProvider;
+
+        
+
         private TableLayoutPanel tableLayoutPanel;
         private TreeView treeViewToAdd, treeViewToExecute;
         private Button 
@@ -16,20 +23,28 @@ namespace SQLMultiScript.UI
             btnNewDatabaseDistribuitionList,
             btnRemoveDatabaseDistribuitionList,
             btnRenameDatabaseDistribuitionList;
+        private ComboBox comboBoxDatabaseDistributionList;
+
         
-        private readonly IConnectionService _connectionService;
-        private readonly IServiceProvider _serviceProvider;
 
 
         private BindingList<Connection> _connections;
+        private BindingList<DatabaseDistributionList> _databaseDistributionLists;
+        
+        
+
         public DatabaseDistributionListForm(
             IConnectionService connectionService,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IDatabaseDistributionListService databaseDistributionListService)
         {
             InitializeLayout();
             _connectionService = connectionService;
             _serviceProvider = serviceProvider;
+            _databaseDistributionListService = databaseDistributionListService;
         }
+
+        
 
         private void InitializeLayout()
         {
@@ -82,6 +97,33 @@ namespace SQLMultiScript.UI
         private void SetupRightColumn()
         {
             // -----------------------
+            // TableLayoutPanel de Botões
+            // -----------------------
+            var toprightTableLayoutPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 60,
+                ColumnCount = 2,
+                RowCount = 1,
+            };
+            toprightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Combo ocupa o espaço todo
+            toprightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F)); // Botão fixo em 50px
+
+            // Cria o ComboBox
+            comboBoxDatabaseDistributionList = new ComboBox
+            {
+                Anchor = AnchorStyles.Left | AnchorStyles.Right, // só alinha horizontal
+
+                DropDownStyle = ComboBoxStyle.DropDownList,
+
+
+            };
+
+
+
+            toprightTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
+
+            // -----------------------
             // Painel de Botões
             // -----------------------
             var buttonPanel = new Panel
@@ -110,7 +152,7 @@ namespace SQLMultiScript.UI
             {
 
                 Dock = DockStyle.Right,
-                Image = Images.ic_fluent_delete_24_regular,
+                Image = Images.ic_fluent_rename_24_regular,
                 Size = UIConstants.ButtonSize
             };
 
@@ -134,10 +176,16 @@ namespace SQLMultiScript.UI
 
             buttonPanel.Controls.Add(btnRemoveDatabaseDistribuitionList);
 
-            
-            
+
+
+            toprightTableLayoutPanel.Controls.Add(buttonPanel, 1, 0);
+
+            //panel.Controls.Add(dropdownlistPanel);
+            //panel.Controls.Add(buttonPanel);
+
             // Adiciona no TableLayout
-            tableLayoutPanel.Controls.Add(buttonPanel, 2, 0);
+            tableLayoutPanel.Controls.Add(toprightTableLayoutPanel, 2, 0);
+            
         }
 
         private void SetupCenterColumn()
@@ -227,9 +275,30 @@ namespace SQLMultiScript.UI
         private async Task BindData()
         {
             await LoadConnectionsAsync();
+            await LoadDistribuitionListsAsync();
 
             // Sempre que a lista mudar, atualiza a TreeView
             UpdateTreeView();
+
+
+            //comboBoxDatabaseDistributionList
+            comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
+            comboBoxDatabaseDistributionList.DisplayMember = "DisplayName";
+            comboBoxDatabaseDistributionList.ValueMember = "Id";
+            //comboBoxDatabaseDistributionList.DataBindings.Add("SelectedValue", _project, "SelectedDistributionListId", true, DataSourceUpdateMode.OnPropertyChanged);
+        }
+
+        private async Task LoadDistribuitionListsAsync()
+        {
+
+
+
+
+
+            _databaseDistributionLists =
+                new BindingList<DatabaseDistributionList>(await _databaseDistributionListService.ListAsync());
+
+
         }
         private void Connections_ListChanged(object sender, ListChangedEventArgs e)
         {
