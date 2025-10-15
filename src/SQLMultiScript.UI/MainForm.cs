@@ -4,6 +4,7 @@ using ScintillaNET;
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using SQLMultiScript.UI.Forms;
 using System.ComponentModel;
 
 namespace SQLMultiScript.UI
