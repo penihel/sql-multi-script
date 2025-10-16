@@ -9,6 +9,9 @@ namespace SQLMultiScript.UI.Forms
 {
     public class DatabaseDistributionListForm : BaseForm
     {
+        private const int TopHeight = 70;
+        private const int FooterpHeight = 70;
+        
         // Services
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
         private readonly IConnectionService _connectionService;
@@ -95,7 +98,7 @@ namespace SQLMultiScript.UI.Forms
                 Dock = DockStyle.Fill,
                 AutoSize = true,
                 ColumnCount = 3,
-                RowCount = 2,
+                RowCount = 4,
                 Padding = UIConstants.PanelPadding
             };
 
@@ -104,23 +107,121 @@ namespace SQLMultiScript.UI.Forms
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10f));
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f));
 
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, TopHeight));
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80f));
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, FooterpHeight));
+
+
+            var panelCol0Row0 = PanelFactory.Create();
+            var panelCol0Row1 = PanelFactory.Create();
+            var panelCol1Row0 = PanelFactory.Create();
+            var panelCol1Row1 = PanelFactory.Create();
+            var panelCol2Row0 = PanelFactory.Create();
+            var panelCol2Row1 = PanelFactory.Create();
+            var panelBottonCol0 = PanelFactory.Create();
+
+            var divider = PanelFactory.CreateDivider();
+
+            SetupLeftTop(panelCol0Row0);
+            SetupLeftBody(panelCol0Row1);
+            SetupCenterBody(panelCol1Row1);
+            SetupRightTop(panelCol2Row0);
+            SetupRightBody(panelCol2Row1);
+            SetupBottomRow(panelBottonCol0);
+
+
+            mainTableLayoutPanel.Controls.Add(panelCol0Row0, 0, 0);
+            mainTableLayoutPanel.Controls.Add(panelCol0Row1, 0, 1);
+            mainTableLayoutPanel.Controls.Add(panelCol1Row0, 1, 0);
+            mainTableLayoutPanel.Controls.Add(panelCol1Row1, 1, 1);
+            mainTableLayoutPanel.Controls.Add(panelCol2Row0, 2, 0);
+            mainTableLayoutPanel.Controls.Add(panelCol2Row1, 2, 1);
+            mainTableLayoutPanel.Controls.Add(divider, 0, 2);
+            mainTableLayoutPanel.SetColumnSpan(divider, 3);
+            mainTableLayoutPanel.Controls.Add(panelBottonCol0, 0, 3);
+            mainTableLayoutPanel.SetColumnSpan(panelBottonCol0, 3);
+
 
             Controls.Add(mainTableLayoutPanel);
-
-            SetupLeftColumn(mainTableLayoutPanel);
-            SetupCenterColumn(mainTableLayoutPanel);
-            SetupRightColumn(mainTableLayoutPanel);
-            SetupBottomRow(mainTableLayoutPanel);
         }
 
-        private void SetupLeftColumn(TableLayoutPanel tableLayoutPanel)
+        private void SetupRightTop(Panel parentPanel)
         {
+            
+            var toprightTableLayoutPanel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+            };
+            toprightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // ComboBox takes all available space
+            toprightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F)); // Button panel fixed width
 
-            var panelLeftContainer = PanelFactory.Create();
+            // ComboBox for distribution lists
+            comboBoxDatabaseDistributionList = new ComboBox
+            {
+                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Height = 60
+            };
+            toprightTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
 
-            var panelTreeView = PanelFactory.Create();
+            // Button panel
+            var buttonPanel = PanelFactory.Create();
+
+
+            // New Distribution List Button
+            var btnNewDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
+                Strings.NewDatabaseDistributionList,
+                Images.ic_fluent_add_24_regular,
+                BtnNewDatabaseDistribuitionList_Click);
+
+            buttonPanel.Controls.Add(btnNewDatabaseDistribuitionList);
+
+            //// Rename Distribution List Button
+            //btnRenameDatabaseDistribuitionList = new Button
+            //{
+            //    Dock = DockStyle.Right,
+            //    Image = Images.ic_fluent_rename_24_regular,
+            //    Size = UIConstants.ButtonSize
+            //};
+            //var toolTipBtnRename = new ToolTip();
+            //toolTipBtnRename.SetToolTip(btnRenameDatabaseDistribuitionList, Resources.Strings.Rename);
+            //buttonPanel.Controls.Add(btnRenameDatabaseDistribuitionList);
+
+            //// Remove Distribution List Button
+            //btnRemoveDatabaseDistribuitionList = new Button
+            //{
+            //    Dock = DockStyle.Right,
+            //    Image = Images.ic_fluent_delete_24_regular,
+            //    Size = UIConstants.ButtonSize
+            //};
+            //var toolTipBtnRemove = new ToolTip();
+            //toolTipBtnRemove.SetToolTip(btnRemoveDatabaseDistribuitionList, Resources.Strings.Remove);
+            //buttonPanel.Controls.Add(btnRemoveDatabaseDistribuitionList);
+
+            toprightTableLayoutPanel.Controls.Add(buttonPanel, 1, 0);
+
+            parentPanel.Controls.Add(toprightTableLayoutPanel);
+        }
+
+        private void SetupLeftTop(Panel parentPanel)
+        {
+            // New Connection Button
+            var btnNew = ButtonFactory.Create(ToolTip,
+                Strings.NewConnection,
+                Images.ic_fluent_new_24_regular,
+                BtnNew_Click,
+                DockStyle.Right);
+
+
+            parentPanel.Controls.Add(btnNew);
+        }
+
+        private void SetupLeftBody(Panel parentPanel)
+        {
+            
 
             var label = LabelFactory.Create(Strings.DatabasesToAdd, DockStyle.Top);
 
@@ -145,30 +246,14 @@ namespace SQLMultiScript.UI.Forms
 
             treeViewToAdd.ImageList = imageList;
 
-            // Button panel at the bottom
-            var buttonPanel = PanelFactory.Create(60, DockStyle.Bottom);
 
-            // New Connection Button
-            var btnNew = ButtonFactory.Create(ToolTip,
-                Strings.NewConnection,
-                Images.ic_fluent_new_24_regular,
-                BtnNew_Click);
+            
 
-
-            buttonPanel.Controls.Add(btnNew);
-
-            // Assemble panels
-            panelTreeView.Controls.Add(treeViewToAdd);
-            panelTreeView.Controls.Add(label);
-
-            panelLeftContainer.Controls.Add(panelTreeView);
-            panelLeftContainer.Controls.Add(buttonPanel);
-
-            // Add to TableLayout
-            tableLayoutPanel.Controls.Add(panelLeftContainer, 0, 0);
+            parentPanel.Controls.Add(treeViewToAdd);
+            //parentPanel.Controls.Add(label);
         }
 
-        private void SetupCenterColumn(TableLayoutPanel tableLayoutPanel)
+        private void SetupCenterBody(Panel parentPanel)
         {
             var flowLayoutPanel = PanelFactory.CreateFlowLayoutPanel(FlowDirection.TopDown)
                 .Customize(c =>
@@ -198,65 +283,12 @@ namespace SQLMultiScript.UI.Forms
             flowLayoutPanel.Controls.Add(btnRemove);
 
             // Add to TableLayout
-            tableLayoutPanel.Controls.Add(flowLayoutPanel, 1, 0);
+            parentPanel.Controls.Add(flowLayoutPanel);
         }
 
-        private void SetupRightColumn(TableLayoutPanel tableLayoutPanel)
+        private void SetupRightBody(Panel parentPanel)
         {
-            // Top-right TableLayoutPanel for buttons and ComboBox
-            var toprightTableLayoutPanel = new TableLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                ColumnCount = 2,
-                RowCount = 1,
-            };
-            toprightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // ComboBox takes all available space
-            toprightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F)); // Button panel fixed width
-
-            // ComboBox for distribution lists
-            comboBoxDatabaseDistributionList = new ComboBox
-            {
-                Anchor = AnchorStyles.Left | AnchorStyles.Right,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-            };
-            toprightTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
-
-            // Button panel
-            var buttonPanel = PanelFactory.Create(60, DockStyle.Top);
-
-
-            // New Distribution List Button
-            var btnNewDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
-                Strings.NewDatabaseDistributionList,
-                Images.ic_fluent_add_24_regular,
-                BtnNewDatabaseDistribuitionList_Click);
-
-            buttonPanel.Controls.Add(btnNewDatabaseDistribuitionList);
-
-            // Rename Distribution List Button
-            btnRenameDatabaseDistribuitionList = new Button
-            {
-                Dock = DockStyle.Right,
-                Image = Images.ic_fluent_rename_24_regular,
-                Size = UIConstants.ButtonSize
-            };
-            var toolTipBtnRename = new ToolTip();
-            toolTipBtnRename.SetToolTip(btnRenameDatabaseDistribuitionList, Resources.Strings.Rename);
-            buttonPanel.Controls.Add(btnRenameDatabaseDistribuitionList);
-
-            // Remove Distribution List Button
-            btnRemoveDatabaseDistribuitionList = new Button
-            {
-                Dock = DockStyle.Right,
-                Image = Images.ic_fluent_delete_24_regular,
-                Size = UIConstants.ButtonSize
-            };
-            var toolTipBtnRemove = new ToolTip();
-            toolTipBtnRemove.SetToolTip(btnRemoveDatabaseDistribuitionList, Resources.Strings.Remove);
-            buttonPanel.Controls.Add(btnRemoveDatabaseDistribuitionList);
-
-            toprightTableLayoutPanel.Controls.Add(buttonPanel, 1, 0);
+            
 
             // DataGridView for databases
             dataGridViewDatabases = new DataGridView
@@ -297,26 +329,16 @@ namespace SQLMultiScript.UI.Forms
             };
             dataGridViewDatabases.Columns.Add(colServer);
 
-            // Panel for the DataGridView
-            var listPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = UIConstants.PanelPadding
-            };
-            listPanel.Controls.Add(dataGridViewDatabases);
+            
 
-            var containerPanel = new Panel
-            {
-                Dock = DockStyle.Fill
-            };
-            containerPanel.Controls.Add(listPanel);
-            containerPanel.Controls.Add(toprightTableLayoutPanel);
+
+
 
             // Add to TableLayout
-            tableLayoutPanel.Controls.Add(containerPanel, 2, 0);
+            parentPanel.Controls.Add(dataGridViewDatabases);
         }
 
-        private void SetupBottomRow(TableLayoutPanel tableLayoutPanel)
+        private void SetupBottomRow(Panel parentPanel)
         {
             
 
@@ -347,8 +369,8 @@ namespace SQLMultiScript.UI.Forms
             bottomContainer.Controls.Add(PanelFactory.CreateDivider());
 
             // Adiciona ao TableLayoutPanel
-            tableLayoutPanel.Controls.Add(bottomContainer, 0, 1);
-            tableLayoutPanel.SetColumnSpan(bottomContainer, 3);
+            parentPanel.Controls.Add(bottomContainer);
+            
         }
 
         
