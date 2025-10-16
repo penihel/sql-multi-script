@@ -4,9 +4,9 @@ using ScintillaNET;
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using SQLMultiScript.Resources;
 using SQLMultiScript.UI.ControlFactories;
 using System.ComponentModel;
-using System.Threading.Tasks;
 
 namespace SQLMultiScript.UI.Forms
 {
@@ -21,12 +21,6 @@ namespace SQLMultiScript.UI.Forms
         private Script _activeScript = null;
         private BindingList<DatabaseDistributionList> _databaseDistributionLists;
 
-        // Componentes
-        private SplitContainer
-            splitMain,
-            splitLeft,
-            splitCenterRight,
-            splitResultFooter;
 
         private DataGridView
             dataGridViewScripts,
@@ -36,13 +30,7 @@ namespace SQLMultiScript.UI.Forms
         private TextBox logBox;
         private MenuStrip menuStrip;
 
-        private Button
-            btnUp,
-            btnDown,
-            btnAdd,
-            btnNew,
-            btnSave,
-            btnRemove;
+        
 
         private ComboBox comboBoxDatabaseDistributionList;
 
@@ -72,7 +60,7 @@ namespace SQLMultiScript.UI.Forms
             Load += MainForm_Load;
 
             // Split principal (top/bottom)
-            splitMain = new SplitContainer
+            var splitMain = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
@@ -81,7 +69,7 @@ namespace SQLMultiScript.UI.Forms
             Controls.Add(splitMain);
 
             // Split esquerda
-            splitLeft = new SplitContainer
+            var splitLeft = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
@@ -93,7 +81,7 @@ namespace SQLMultiScript.UI.Forms
             SetupScriptsPanel(splitLeft.Panel1);
 
             // Split centro/direita
-            splitCenterRight = new SplitContainer
+            var splitCenterRight = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
@@ -108,7 +96,7 @@ namespace SQLMultiScript.UI.Forms
             SetupDatabaseDistributionListPanel(splitCenterRight.Panel2);
 
             // Split footer/result
-            splitResultFooter = new SplitContainer
+            var splitResultFooter = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
@@ -307,11 +295,7 @@ namespace SQLMultiScript.UI.Forms
             // -----------------------
             // Painel do grid
             // -----------------------
-            var listPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = UIConstants.PanelPadding
-            };
+            var listPanel = PanelFactory.Create();
 
             listPanel.Controls.Add(dataGridViewScripts);
 
@@ -321,93 +305,62 @@ namespace SQLMultiScript.UI.Forms
             // -----------------------
             // Painel de Botões
             // -----------------------
-            var buttonPanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                Padding = UIConstants.PanelPadding
-            };
+            var buttonPanel = PanelFactory.Create(60, DockStyle.Top);
 
 
 
 
-            btnDown = new Button
-            {
 
-                Dock = DockStyle.Left,
-                Image = Images.ic_fluent_arrow_circle_down_24_regular,
-                Size = UIConstants.ButtonSize,
-            };
-            btnDown.Click += BtnDown_Click;
-            var toolTipBtnDown = new ToolTip();
-            toolTipBtnDown.SetToolTip(btnDown, Resources.Strings.Down);
+            var btnDown = ButtonFactory.Create(ToolTip,
+                Strings.Down,
+                Images.ic_fluent_arrow_circle_down_24_regular,
+                null,
+                DockStyle.Left);
 
 
-            btnUp = new Button
-            {
-
-                Dock = DockStyle.Left,
-                Image = Images.ic_fluent_arrow_circle_up_24_regular,
-                Size = UIConstants.ButtonSize
-            };
-            btnUp.Click += BtnUp_Click;
-            var toolTipBtnUp = new ToolTip();
-            toolTipBtnUp.SetToolTip(btnUp, Resources.Strings.Up);
+            var btnUp = ButtonFactory.Create(ToolTip,
+                Strings.Up,
+                Images.ic_fluent_arrow_circle_up_24_regular,
+                null,
+                DockStyle.Left);
 
 
-            btnRemove = new Button
-            {
+            var btnRemove = ButtonFactory.Create(ToolTip,
+                Strings.Remove,
+                Images.ic_fluent_delete_24_regular,
+                null,
+                DockStyle.Left);
 
-                Dock = DockStyle.Left,
-                Image = Images.ic_fluent_delete_24_regular,
-                Size = UIConstants.ButtonSize
 
-            };
-            btnRemove.Click += BtnRemove_Click;
-            var toolTipBtnRemove = new ToolTip();
-            toolTipBtnRemove.SetToolTip(btnRemove, Resources.Strings.Remove);
 
+            
 
 
             buttonPanel.Controls.Add(btnRemove);
-            buttonPanel.Controls.Add(btnDown);
             buttonPanel.Controls.Add(btnUp);
+            buttonPanel.Controls.Add(btnDown);
 
 
             //
+            var btnNew = ButtonFactory.Create(ToolTip,
+                Strings.New,
+                Images.ic_fluent_new_24_regular,
+                null,
+                DockStyle.Right);
 
-            btnNew = new Button
-            {
+            var btnAdd = ButtonFactory.Create(ToolTip,
+                Strings.AddExisting,
+                Images.ic_fluent_add_24_regular,
+                BtnAdd_Click,
+                DockStyle.Right);
 
-                Dock = DockStyle.Right,
-                Image = Images.ic_fluent_new_24_regular,
-                Size = UIConstants.ButtonSize
-            };
-            btnNew.Click += BtnNew_Click;
-            var toolTipBtnNew = new ToolTip();
-            toolTipBtnNew.SetToolTip(btnNew, Resources.Strings.New);
+
             buttonPanel.Controls.Add(btnNew);
-
-
-
-            btnAdd = new Button
-            {
-
-                Dock = DockStyle.Right,
-                Image = Images.ic_fluent_add_24_regular,
-                Size = UIConstants.ButtonSize
-
-            };
-            btnAdd.Click += BtnAdd_Click;
-            var toolTipBtnAdd = new ToolTip();
-            toolTipBtnAdd.SetToolTip(btnAdd, Resources.Strings.AddExisting);
-
             buttonPanel.Controls.Add(btnAdd);
 
 
 
-
-
+            
 
             parentPanel.Controls.Add(buttonPanel);  // botões por cima
 
@@ -463,12 +416,12 @@ namespace SQLMultiScript.UI.Forms
         private void SetupEditorPanel(Panel parentPanel)
         {
 
-            var editorPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = UIConstants.PanelPadding,
-                BackColor = Color.Transparent // opcional
-            };
+            var editorPanel = PanelFactory.Create();
+            //{
+            //    Dock = DockStyle.Fill,
+            //    Padding = UIConstants.PanelPadding,
+            //    BackColor = Color.Transparent // opcional
+            //};
 
 
 
@@ -524,7 +477,7 @@ namespace SQLMultiScript.UI.Forms
             };
 
             // Botão Salvar no canto direito
-            btnSave = new Button
+            var btnSave = new Button
             {
                 Image = Images.ic_fluent_save_24_regular,
                 Dock = DockStyle.Right,

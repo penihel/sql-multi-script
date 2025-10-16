@@ -146,7 +146,7 @@ namespace SQLMultiScript.UI.Forms
             treeViewToAdd.ImageList = imageList;
 
             // Button panel at the bottom
-            var buttonPanel = PanelFactory.Create(DockStyle.Bottom, 60);
+            var buttonPanel = PanelFactory.Create(60, DockStyle.Bottom);
 
             // New Connection Button
             var btnNew = ButtonFactory.Create(ToolTip,
@@ -223,7 +223,7 @@ namespace SQLMultiScript.UI.Forms
             toprightTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
 
             // Button panel
-            var buttonPanel = PanelFactory.Create(DockStyle.Top, 60);
+            var buttonPanel = PanelFactory.Create(60, DockStyle.Top);
 
 
             // New Distribution List Button

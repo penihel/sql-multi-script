@@ -2,7 +2,7 @@
 {
     public static class PanelFactory
     {
-        public static Panel Create(DockStyle dock = DockStyle.Fill, int? height = null)
+        public static Panel Create(int? height = null, DockStyle dock = DockStyle.Fill)
         {
             var panel = new Panel
             {
@@ -46,12 +46,12 @@
                 Margin = UIConstants.DividerMargin,
             };
 
-            
+
 
             return divider;
         }
 
 
-        
+
     }
 }
