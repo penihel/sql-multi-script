@@ -7,6 +7,7 @@ using SQLMultiScript.Core.Models;
 using SQLMultiScript.UI.ControlFactories;
 using SQLMultiScript.UI.Forms;
 using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace SQLMultiScript.UI
 {
@@ -672,7 +673,7 @@ namespace SQLMultiScript.UI
 
         }
 
-        private bool SaveProject(Project project)
+        private async Task<bool> SaveProjectAsync(Project project)
         {
             bool savedAllScripts = true;
 
@@ -703,13 +704,7 @@ namespace SQLMultiScript.UI
 
             try
             {
-                var projectJson = System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-                File.WriteAllText(project.FilePath, projectJson);
-
+                await _projectService.SaveAsync(project);
 
                 Log($"Project save: {project.FilePath}");
 
@@ -860,7 +855,7 @@ namespace SQLMultiScript.UI
             await NewProjectAsync();
         }
 
-        private void SaveProjectItem_Click(object sender, EventArgs e)
+        private async void SaveProjectItem_Click(object sender, EventArgs e)
         {
             if (_currentProject == null) return;
 
@@ -872,7 +867,7 @@ namespace SQLMultiScript.UI
 
 
 
-            var savedProject = SaveProject(_currentProject);
+            var savedProject = await SaveProjectAsync(_currentProject);
 
             if (savedProject)
             {
@@ -885,11 +880,11 @@ namespace SQLMultiScript.UI
 
 
 
-        private void CloseProjectItem_Click(object sender, EventArgs e)
+        private async void CloseProjectItem_Click(object sender, EventArgs e)
         {
             if (_currentProject == null) return;
 
-            var savedProject = SaveProject(_currentProject);
+            var savedProject = await SaveProjectAsync(_currentProject);
 
             if (savedProject)
             {

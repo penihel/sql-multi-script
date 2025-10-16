@@ -1,6 +1,7 @@
 ﻿using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using SQLMultiScript.Core.Models.Files;
 
 namespace SQLMultiScript.Services
 {
@@ -31,6 +32,11 @@ namespace SQLMultiScript.Services
             return await Task.FromResult(project);
         }
 
+        public Task<Result<Project>> CreateNewAsync(string filePath)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<Project> LoadAsync(string filePath)
         {
 
@@ -48,6 +54,24 @@ namespace SQLMultiScript.Services
                     state.FilePath = filePath;
             }
             return state ?? new Project();
+
+        }
+
+        public async Task<Result<Project>> SaveAsync(Project project)
+        {
+            var projectFile = new ProjectFile()
+            {
+                Project = project,
+            };
+
+            var projectJson = System.Text.Json.JsonSerializer.Serialize(projectFile, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            await File.WriteAllTextAsync(project.FilePath, projectJson);
+
+            return Result<Project>.Ok(project);
 
         }
     }

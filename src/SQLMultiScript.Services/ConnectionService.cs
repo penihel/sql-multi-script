@@ -2,6 +2,7 @@
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using SQLMultiScript.Core.Models.Files;
 
 namespace SQLMultiScript.Services
 {
@@ -31,11 +32,13 @@ namespace SQLMultiScript.Services
                     {
 
                         var json = await File.ReadAllTextAsync(file);
-                        var item = System.Text.Json.JsonSerializer.Deserialize<Connection>(json);
-                        if (item != null && item.Id != Guid.Empty)
+                        var item = System.Text.Json.JsonSerializer.Deserialize<ConnectionFile>(json);
+                        if (item != null && item.FileType == ConnectionFile.Type
+                            && item.Connection != null)
                         {
-                            item.FilePath = file;
-                            retorno.Add(item);
+                            item.Connection.FilePath = file;
+
+                            retorno.Add(item.Connection);
                         }
 
                     }
@@ -87,7 +90,7 @@ namespace SQLMultiScript.Services
             return databases;
         }
 
-        public async Task SaveAsync(Connection connection)
+        public async Task<Result<Guid>> SaveAsync(Connection connection)
         {
 
             if (connection == null) throw new ArgumentNullException(nameof(connection));
@@ -110,14 +113,20 @@ namespace SQLMultiScript.Services
                 connection.FilePath = Path.Combine(_pathService.GetConnectionsPath(), fileName);
             }
 
+            var connectionFile = new ConnectionFile()
+            {
+                Connection = connection,
+            };
 
-            var json = System.Text.Json.JsonSerializer.Serialize(connection, new System.Text.Json.JsonSerializerOptions
+            var json = System.Text.Json.JsonSerializer.Serialize(connectionFile, new System.Text.Json.JsonSerializerOptions
             {
                 WriteIndented = true
             });
 
 
             await File.WriteAllTextAsync(connection.FilePath, json);
+
+            return Result<Guid>.Ok(connection.Id);
 
         }
 

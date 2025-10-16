@@ -4,7 +4,7 @@ namespace SQLMultiScript.Core.Interfaces
 {
     public interface IConnectionService
     {
-        Task SaveAsync(Connection connection);
+        Task<Result<Guid>> SaveAsync(Connection connection);
         Task<IList<Connection>> ListAsync();
         Task<IList<Database>> ListDatabasesAsync(Connection connection);
 

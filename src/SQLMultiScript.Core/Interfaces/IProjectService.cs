@@ -6,5 +6,6 @@ namespace SQLMultiScript.Core.Interfaces
     {
         Task<Project> LoadAsync(string filePath);
         Task<Project> CreateNewAsync();
+        Task<Result<Project>> SaveAsync(Project project);
     }
 }
