@@ -9,7 +9,7 @@ namespace SQLMultiScript.UI.Forms
 {
     public class DatabaseDistributionListForm : BaseForm
     {
-        private const int TopHeight = 70;
+        private const int TopHeight = 60;
         private const int FooterpHeight = 70;
         
         // Services
@@ -21,9 +21,7 @@ namespace SQLMultiScript.UI.Forms
         private DataGridView dataGridViewDatabases;
         private TreeView treeViewToAdd;
 
-        private Button
-            btnRemoveDatabaseDistribuitionList,
-            btnRenameDatabaseDistribuitionList;
+        
         private ComboBox comboBoxDatabaseDistributionList;
 
 
@@ -149,61 +147,50 @@ namespace SQLMultiScript.UI.Forms
         private void SetupRightTop(Panel parentPanel)
         {
             
-            var toprightTableLayoutPanel = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
-            };
-            toprightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // ComboBox takes all available space
-            toprightTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F)); // Button panel fixed width
+            
 
             // ComboBox for distribution lists
             comboBoxDatabaseDistributionList = new ComboBox
             {
-                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
+                //Anchor = AnchorStyles.Left | AnchorStyles.Right,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Height = 60
+                Dock = DockStyle.Fill,
             };
-            toprightTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
+            
 
-            // Button panel
-            var buttonPanel = PanelFactory.Create();
-
-
+            
             // New Distribution List Button
             var btnNewDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
                 Strings.NewDatabaseDistributionList,
                 Images.ic_fluent_add_24_regular,
-                BtnNewDatabaseDistribuitionList_Click);
+                BtnNewDatabaseDistribuitionList_Click,
+                DockStyle.Right);
 
-            buttonPanel.Controls.Add(btnNewDatabaseDistribuitionList);
 
-            //// Rename Distribution List Button
-            //btnRenameDatabaseDistribuitionList = new Button
-            //{
-            //    Dock = DockStyle.Right,
-            //    Image = Images.ic_fluent_rename_24_regular,
-            //    Size = UIConstants.ButtonSize
-            //};
-            //var toolTipBtnRename = new ToolTip();
-            //toolTipBtnRename.SetToolTip(btnRenameDatabaseDistribuitionList, Resources.Strings.Rename);
-            //buttonPanel.Controls.Add(btnRenameDatabaseDistribuitionList);
 
-            //// Remove Distribution List Button
-            //btnRemoveDatabaseDistribuitionList = new Button
-            //{
-            //    Dock = DockStyle.Right,
-            //    Image = Images.ic_fluent_delete_24_regular,
-            //    Size = UIConstants.ButtonSize
-            //};
-            //var toolTipBtnRemove = new ToolTip();
-            //toolTipBtnRemove.SetToolTip(btnRemoveDatabaseDistribuitionList, Resources.Strings.Remove);
-            //buttonPanel.Controls.Add(btnRemoveDatabaseDistribuitionList);
+            var btnRenameDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
+                Strings.Rename,
+                Images.ic_fluent_rename_24_regular,
+                null,
+                DockStyle.Right);
 
-            toprightTableLayoutPanel.Controls.Add(buttonPanel, 1, 0);
+            var btnRemoveDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
+                Strings.Remove,
+                Images.ic_fluent_delete_24_regular,
+                null,
+                DockStyle.Right);
 
-            parentPanel.Controls.Add(toprightTableLayoutPanel);
+            parentPanel.Controls.Add(comboBoxDatabaseDistributionList);
+
+            parentPanel.Controls.Add(btnNewDatabaseDistribuitionList);
+            parentPanel.Controls.Add(btnRenameDatabaseDistribuitionList);
+            parentPanel.Controls.Add(btnRemoveDatabaseDistribuitionList);
+
+
+            
+
+
+
         }
 
         private void SetupLeftTop(Panel parentPanel)
