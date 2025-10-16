@@ -122,7 +122,7 @@ namespace SQLMultiScript.UI.Forms
 
             var panelTreeView = PanelFactory.Create();
 
-            var label = LabelFactory.Create(Strings.DatabasesToAdd);
+            var label = LabelFactory.Create(Strings.DatabasesToAdd, DockStyle.Top);
 
             // TreeView occupies the top and expands
             treeViewToAdd = new TreeView
@@ -365,7 +365,7 @@ namespace SQLMultiScript.UI.Forms
             UpdateTreeView();
 
             comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
-            comboBoxDatabaseDistributionList.DisplayMember = "DisplayName";
+            comboBoxDatabaseDistributionList.DisplayMember = "Name";
             comboBoxDatabaseDistributionList.ValueMember = "Id";
 
             if (comboBoxDatabaseDistributionList.DataBindings.Count == 0)
