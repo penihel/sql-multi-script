@@ -5,11 +5,10 @@ using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using SQLMultiScript.UI.ControlFactories;
-using SQLMultiScript.UI.Forms;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace SQLMultiScript.UI
+namespace SQLMultiScript.UI.Forms
 {
     public class MainForm : BaseForm
     {

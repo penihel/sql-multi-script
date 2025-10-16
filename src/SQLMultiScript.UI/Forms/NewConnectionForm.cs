@@ -3,7 +3,7 @@ using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 
-namespace SQLMultiScript.UI
+namespace SQLMultiScript.UI.Forms
 {
     public class NewConnectionForm : Form
     {
