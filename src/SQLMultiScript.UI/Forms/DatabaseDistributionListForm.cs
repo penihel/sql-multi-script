@@ -19,8 +19,6 @@ namespace SQLMultiScript.UI.Forms
         private TreeView treeViewToAdd;
 
         private Button
-            btnAdd,
-            btnRemove,
             btnRemoveDatabaseDistribuitionList,
             btnRenameDatabaseDistribuitionList;
         private ComboBox comboBoxDatabaseDistributionList;
@@ -131,7 +129,7 @@ namespace SQLMultiScript.UI.Forms
             var btnNew = ButtonFactory.Create(ToolTip,
                 Strings.NewConnection,
                 Images.ic_fluent_new_24_regular,
-                onClick: BtnNew_Click);
+                BtnNew_Click);
 
 
             buttonPanel.Controls.Add(btnNew);
@@ -149,40 +147,35 @@ namespace SQLMultiScript.UI.Forms
 
         private void SetupCenterColumn(TableLayoutPanel tableLayoutPanel)
         {
-            var panel = new FlowLayoutPanel
-            {
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.TopDown,
-                Anchor = AnchorStyles.None,
-                Padding = UIConstants.PanelPadding,
-            };
+            var flowLayoutPanel = PanelFactory.CreateFlowLayoutPanel(FlowDirection.TopDown)
+                .Customize(c =>
+                {
+                    c.Anchor = AnchorStyles.None;
+                    c.AutoSize = true;
+                });
+
 
             // Add Button
-            btnAdd = new Button
-            {
-                Image = Images.ic_fluent_arrow_circle_right_24_regular,
-                Size = UIConstants.ButtonSize,
-            };
-            btnAdd.Click += BtnAdd_Click;
-            var toolTipBtnAdd = new ToolTip();
-            toolTipBtnAdd.SetToolTip(btnAdd, Resources.Strings.Add);
+            var btnAdd = ButtonFactory.Create(ToolTip,
+                Strings.Add,
+                Images.ic_fluent_arrow_circle_right_24_regular, 
+                BtnAdd_Click);
+
+            
+
 
             // Remove Button
-            btnRemove = new Button
-            {
-                Image = Images.ic_fluent_arrow_circle_left_24_regular,
-                Size = UIConstants.ButtonSize,
-            };
-            btnRemove.Click += BtnRemove_Click;
-            var toolTipBtnRemove = new ToolTip();
-            toolTipBtnRemove.SetToolTip(btnRemove, Resources.Strings.Remove);
+            var btnRemove = ButtonFactory.Create(ToolTip,
+                Strings.Remove,
+                Images.ic_fluent_arrow_circle_left_24_regular,
+                BtnRemove_Click);
+            
 
-            panel.Controls.Add(btnAdd);
-            panel.Controls.Add(btnRemove);
+            flowLayoutPanel.Controls.Add(btnAdd);
+            flowLayoutPanel.Controls.Add(btnRemove);
 
             // Add to TableLayout
-            tableLayoutPanel.Controls.Add(panel, 1, 0);
+            tableLayoutPanel.Controls.Add(flowLayoutPanel, 1, 0);
         }
 
         private void SetupRightColumn(TableLayoutPanel tableLayoutPanel)
@@ -214,7 +207,7 @@ namespace SQLMultiScript.UI.Forms
             var btnNewDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
                 Strings.NewDatabaseDistributionList,
                 Images.ic_fluent_add_24_regular,
-                onClick: BtnNewDatabaseDistribuitionList_Click);
+                BtnNewDatabaseDistribuitionList_Click);
 
             buttonPanel.Controls.Add(btnNewDatabaseDistribuitionList);
 
@@ -316,15 +309,13 @@ namespace SQLMultiScript.UI.Forms
             var btnSave = ButtonFactory
                 .Create(ToolTip,
                     Strings.Save,
-                    Images.ic_fluent_save_24_regular,
-                    DockStyle.Right);
+                    Images.ic_fluent_save_24_regular);
 
 
             var btnCancel = ButtonFactory
                 .Create(ToolTip,
                     Strings.Cancel,
-                    Images.ic_fluent_dismiss_24_regular,
-                    DockStyle.Right);
+                    Images.ic_fluent_dismiss_24_regular);
 
             buttonPanel.Controls.Add(btnCancel);
             buttonPanel.Controls.Add(btnSave);
@@ -345,7 +336,7 @@ namespace SQLMultiScript.UI.Forms
             tableLayoutPanel.SetColumnSpan(bottomContainer, 3);
         }
 
-        
+
 
         // Data binding and loading
         private async Task BindDataAsync()
@@ -415,7 +406,7 @@ namespace SQLMultiScript.UI.Forms
 
         private void BtnAdd_Click(object sender, EventArgs e)
         {
-            // TODO: Implement add logic
+            
         }
 
         private async void BtnNew_Click(object sender, EventArgs e)

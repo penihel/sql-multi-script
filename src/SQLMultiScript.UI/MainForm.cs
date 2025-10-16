@@ -217,7 +217,8 @@ namespace SQLMultiScript.UI
 
             var btnDatabaseDistributionList = ButtonFactory.Create(ToolTip,
                 Resources.Strings.DatabaseDistributionLists,
-                Images.ic_fluent_database_stack_16_regular, onClick: btnDatabaseDistributionList_Click);
+                Images.ic_fluent_database_stack_16_regular,
+                btnDatabaseDistributionList_Click);
 
 
 
