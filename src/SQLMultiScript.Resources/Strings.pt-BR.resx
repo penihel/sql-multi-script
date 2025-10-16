@@ -171,4 +171,16 @@
   <data name="Rename" xml:space="preserve">
     <value>Renomear</value>
   </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="DatabaseDistributionListEnterPrompt" xml:space="preserve">
+    <value>Digite o nome da nova lista de distribuição:</value>
+  </data>
+  <data name="Attention" xml:space="preserve">
+    <value>Atenção</value>
+  </data>
+  <data name="FieldCannotBeEmpty" xml:space="preserve">
+    <value>O campo não pode estar vazio.</value>
+  </data>
 </root>

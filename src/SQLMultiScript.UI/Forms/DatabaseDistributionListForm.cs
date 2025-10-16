@@ -21,7 +21,6 @@ namespace SQLMultiScript.UI.Forms
         private Button
             btnAdd,
             btnRemove,
-            btnNewDatabaseDistribuitionList,
             btnRemoveDatabaseDistribuitionList,
             btnRenameDatabaseDistribuitionList;
         private ComboBox comboBoxDatabaseDistributionList;
@@ -63,7 +62,7 @@ namespace SQLMultiScript.UI.Forms
                 AutoSize = true,
                 ColumnCount = 3,
                 RowCount = 2,
-                Padding = new Padding(UIConstants.PanelPadding)
+                Padding = UIConstants.PanelPadding
             };
 
             // Set column and row sizes
@@ -143,7 +142,7 @@ namespace SQLMultiScript.UI.Forms
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 FlowDirection = FlowDirection.TopDown,
                 Anchor = AnchorStyles.None,
-                Padding = new Padding(UIConstants.PanelPadding),
+                Padding = UIConstants.PanelPadding,
             };
 
             // Add Button
@@ -199,18 +198,15 @@ namespace SQLMultiScript.UI.Forms
             {
                 Dock = DockStyle.Top,
                 Height = 60,
-                Padding = new Padding(UIConstants.PanelPadding)
+                Padding = UIConstants.PanelPadding
             };
 
             // New Distribution List Button
-            btnNewDatabaseDistribuitionList = new Button
-            {
-                Dock = DockStyle.Right,
-                Image = Images.ic_fluent_add_24_regular,
-                Size = UIConstants.ButtonSize
-            };
-            var toolTipBtnNew = new ToolTip();
-            toolTipBtnNew.SetToolTip(btnNewDatabaseDistribuitionList, Resources.Strings.NewDatabaseDistributionList);
+            var btnNewDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
+                Strings.NewDatabaseDistributionList,
+                Images.ic_fluent_add_24_regular,
+                onClick: BtnNewDatabaseDistribuitionList_Click);
+            
             buttonPanel.Controls.Add(btnNewDatabaseDistribuitionList);
 
             // Rename Distribution List Button
@@ -275,7 +271,7 @@ namespace SQLMultiScript.UI.Forms
             var listPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(UIConstants.PanelPadding)
+                Padding = UIConstants.PanelPadding
             };
             listPanel.Controls.Add(dataGridViewDatabases);
 
@@ -305,7 +301,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 Dock = DockStyle.Fill,
                 Height = 60,
-                Padding = new Padding(UIConstants.PanelPadding)
+                Padding = UIConstants.PanelPadding
             };
 
             var btnSave = ButtonFactory
@@ -503,6 +499,17 @@ namespace SQLMultiScript.UI.Forms
 
             // Propagate upwards
             UpdateParentCheckState(node.Parent);
+        }
+
+        private void BtnNewDatabaseDistribuitionList_Click(object sender, EventArgs e)
+        {
+            string name = Prompt.ShowDialog(Strings.DatabaseDistributionListEnterPrompt, Strings.NewDatabaseDistributionList);
+            
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                // Crie a lista de distribuição com o nome informado
+                MessageBox.Show(name);
+            }
         }
     }
 }

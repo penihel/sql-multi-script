@@ -181,7 +181,7 @@ namespace SQLMultiScript.UI
             var listPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(UIConstants.PanelPadding)
+                Padding = UIConstants.PanelPadding
             };
 
             listPanel.Controls.Add(dataGridViewDatabases);
@@ -311,7 +311,7 @@ namespace SQLMultiScript.UI
             var listPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(UIConstants.PanelPadding)
+                Padding = UIConstants.PanelPadding
             };
 
             listPanel.Controls.Add(dataGridViewScripts);
@@ -326,7 +326,7 @@ namespace SQLMultiScript.UI
             {
                 Dock = DockStyle.Top,
                 Height = 60,
-                Padding = new Padding(UIConstants.PanelPadding)
+                Padding = UIConstants.PanelPadding
             };
 
             
@@ -467,7 +467,7 @@ namespace SQLMultiScript.UI
             var editorPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(UIConstants.PanelPadding),
+                Padding = UIConstants.PanelPadding,
                 BackColor = Color.Transparent // opcional
             };
 
@@ -520,7 +520,7 @@ namespace SQLMultiScript.UI
             var buttonPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Padding = new Padding(UIConstants.PanelPadding),
+                Padding = UIConstants.PanelPadding,
                 Height = 60,
             };
 

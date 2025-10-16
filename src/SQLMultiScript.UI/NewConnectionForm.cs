@@ -61,7 +61,7 @@ namespace SQLMultiScript.UI
             var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(UIConstants.PanelPadding),
+                Padding = UIConstants.PanelPadding,
                 ColumnCount = 2,
                 RowCount = 6,
                 AutoSize = true
@@ -122,7 +122,7 @@ namespace SQLMultiScript.UI
             {
                 FlowDirection = FlowDirection.RightToLeft,
                 Dock = DockStyle.Bottom,
-                Padding = new Padding(UIConstants.PanelPadding),
+                Padding = UIConstants.PanelPadding,
                 AutoSize = true,
             };
 
