@@ -151,7 +151,7 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The field cannot be empty..
+        ///   Looks up a localized string similar to The field cannot be empty.
         /// </summary>
         public static string FieldCannotBeEmpty {
             get {
@@ -201,6 +201,15 @@ namespace SQLMultiScript.Resources {
         public static string OK {
             get {
                 return ResourceManager.GetString("OK", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A record with this name already exists.
+        /// </summary>
+        public static string RecordAlreadyExists {
+            get {
+                return ResourceManager.GetString("RecordAlreadyExists", resourceCulture);
             }
         }
         

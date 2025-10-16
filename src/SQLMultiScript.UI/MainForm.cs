@@ -4,12 +4,13 @@ using ScintillaNET;
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
+using SQLMultiScript.UI.ControlFactories;
 using SQLMultiScript.UI.Forms;
 using System.ComponentModel;
 
 namespace SQLMultiScript.UI
 {
-    public class MainForm : Form
+    public class MainForm : BaseForm
     {
         private readonly IProjectService _projectService;
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
@@ -21,32 +22,31 @@ namespace SQLMultiScript.UI
         private BindingList<DatabaseDistributionList> _databaseDistributionLists;
 
         // Componentes
-        private SplitContainer 
-            splitMain, 
-            splitLeft, 
-            splitCenterRight, 
+        private SplitContainer
+            splitMain,
+            splitLeft,
+            splitCenterRight,
             splitResultFooter;
-        
-        private DataGridView 
-            dataGridViewScripts, 
+
+        private DataGridView
+            dataGridViewScripts,
             dataGridViewDatabases;
-        
+
         private Scintilla sqlEditor;
         private TextBox logBox;
         private MenuStrip menuStrip;
-        
-        private Button 
-            btnUp, 
-            btnDown, 
-            btnAdd, 
-            btnNew, 
-            btnSave, 
-            btnRemove, 
-            btnDatabaseDistributionList;
+
+        private Button
+            btnUp,
+            btnDown,
+            btnAdd,
+            btnNew,
+            btnSave,
+            btnRemove;
 
         private ComboBox comboBoxDatabaseDistributionList;
 
-        
+
 
         public MainForm(
             ILogger logger,
@@ -65,7 +65,7 @@ namespace SQLMultiScript.UI
 
         private void InitializeLayout()
         {
-            
+
             Text = $"{Constants.ApplicationName} - {Constants.ApplicationVersion}";
             Icon = new Icon("sql-multi-script.ico");
             WindowState = FormWindowState.Maximized;
@@ -205,26 +205,24 @@ namespace SQLMultiScript.UI
             comboBoxDatabaseDistributionList = new ComboBox
             {
                 Anchor = AnchorStyles.Left | AnchorStyles.Right, // só alinha horizontal
-                
+
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                
+
 
             };
 
-            
 
-            topTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList,0,0);
 
-            btnDatabaseDistributionList = new Button
-            {
-                Dock = DockStyle.Right,
-                Image = Images.ic_fluent_database_stack_16_regular,
-                Size = UIConstants.ButtonSize,
-            };
-            var toolTipBtn = new ToolTip();
-            toolTipBtn.SetToolTip(btnDatabaseDistributionList, Resources.Strings.DatabaseDistributionLists);
+            topTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
 
-            btnDatabaseDistributionList.Click += btnDatabaseDistributionList_Click;
+            var btnDatabaseDistributionList = ButtonFactory.Create(ToolTip,
+                Resources.Strings.DatabaseDistributionLists,
+                Images.ic_fluent_database_stack_16_regular, onClick: btnDatabaseDistributionList_Click);
+
+
+
+
+
 
 
             topTableLayoutPanel.Controls.Add(btnDatabaseDistributionList, 1, 0);
@@ -329,7 +327,7 @@ namespace SQLMultiScript.UI
                 Padding = UIConstants.PanelPadding
             };
 
-            
+
 
 
             btnDown = new Button
@@ -360,7 +358,7 @@ namespace SQLMultiScript.UI
             {
 
                 Dock = DockStyle.Left,
-                Image = Images.ic_fluent_delete_24_regular,               
+                Image = Images.ic_fluent_delete_24_regular,
                 Size = UIConstants.ButtonSize
 
             };
@@ -368,8 +366,8 @@ namespace SQLMultiScript.UI
             var toolTipBtnRemove = new ToolTip();
             toolTipBtnRemove.SetToolTip(btnRemove, Resources.Strings.Remove);
 
-            
-            
+
+
             buttonPanel.Controls.Add(btnRemove);
             buttonPanel.Controls.Add(btnDown);
             buttonPanel.Controls.Add(btnUp);
@@ -395,7 +393,7 @@ namespace SQLMultiScript.UI
             {
 
                 Dock = DockStyle.Right,
-                Image = Images.ic_fluent_add_24_regular,                
+                Image = Images.ic_fluent_add_24_regular,
                 Size = UIConstants.ButtonSize
 
             };
@@ -406,7 +404,7 @@ namespace SQLMultiScript.UI
             buttonPanel.Controls.Add(btnAdd);
 
 
-            
+
 
 
 
@@ -739,9 +737,9 @@ namespace SQLMultiScript.UI
         {
 
 
-            
 
-            
+
+
             _databaseDistributionLists =
                 new BindingList<DatabaseDistributionList>(await _databaseDistributionListService.ListAsync());
 
@@ -779,7 +777,7 @@ namespace SQLMultiScript.UI
         {
 
         }
-        
+
         private void BtnUp_Click(object sender, EventArgs e)
         {
 
@@ -918,7 +916,7 @@ namespace SQLMultiScript.UI
             {
                 Text = "About",
                 Size = new Size(400, 200),
-                StartPosition = FormStartPosition.CenterParent, 
+                StartPosition = FormStartPosition.CenterParent,
                 ShowInTaskbar = false
             };
 
@@ -943,7 +941,7 @@ namespace SQLMultiScript.UI
         {
             var databaseDistributionListForm = _serviceProvider.GetRequiredService<DatabaseDistributionListForm>();
 
-            
+            databaseDistributionListForm.SelectedDistributionListId = _currentProject.SelectedDistributionListId ?? Guid.Empty;
 
             var result = databaseDistributionListForm.ShowDialog(this);
         }
@@ -973,7 +971,7 @@ namespace SQLMultiScript.UI
 
         }
 
-        
+
         private void Log(string message, bool isError = false)
         {
             string prefix = isError ? "[ERRO]" : "[INFO]";

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SQLMultiScript.Core\SQLMultiScript.Core.csproj" />
+    <ProjectReference Include="..\SQLMultiScript.Resources\SQLMultiScript.Resources.csproj" />
   </ItemGroup>
 
 </Project>

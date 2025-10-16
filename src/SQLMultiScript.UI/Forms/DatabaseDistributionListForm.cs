@@ -25,9 +25,22 @@ namespace SQLMultiScript.UI.Forms
             btnRenameDatabaseDistribuitionList;
         private ComboBox comboBoxDatabaseDistributionList;
 
+
+
         // Data
         private BindingList<Connection> _connections;
         private BindingList<DatabaseDistributionList> _databaseDistributionLists;
+
+
+        //Properties
+        private Guid _selectedDistributionListId;
+
+        public Guid SelectedDistributionListId
+        {
+            get => _selectedDistributionListId;
+            set => SetProperty(ref _selectedDistributionListId, value);
+        }
+
 
         public DatabaseDistributionListForm(
             IConnectionService connectionService,
@@ -117,10 +130,10 @@ namespace SQLMultiScript.UI.Forms
             // New Connection Button
             var btnNew = ButtonFactory.Create(ToolTip,
                 Strings.NewConnection,
-                Images.ic_fluent_new_24_regular, 
+                Images.ic_fluent_new_24_regular,
                 onClick: BtnNew_Click);
-            
-            
+
+
             buttonPanel.Controls.Add(btnNew);
 
             // Assemble panels
@@ -194,19 +207,15 @@ namespace SQLMultiScript.UI.Forms
             toprightTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
 
             // Button panel
-            var buttonPanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                Padding = UIConstants.PanelPadding
-            };
+            var buttonPanel = PanelFactory.Create(DockStyle.Top, 60);
+
 
             // New Distribution List Button
             var btnNewDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
                 Strings.NewDatabaseDistributionList,
                 Images.ic_fluent_add_24_regular,
                 onClick: BtnNewDatabaseDistribuitionList_Click);
-            
+
             buttonPanel.Controls.Add(btnNewDatabaseDistribuitionList);
 
             // Rename Distribution List Button
@@ -336,8 +345,10 @@ namespace SQLMultiScript.UI.Forms
             tableLayoutPanel.SetColumnSpan(bottomContainer, 3);
         }
 
+        
+
         // Data binding and loading
-        private async Task BindData()
+        private async Task BindDataAsync()
         {
             await LoadConnectionsAsync();
             await LoadDistribuitionListsAsync();
@@ -348,7 +359,9 @@ namespace SQLMultiScript.UI.Forms
             comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
             comboBoxDatabaseDistributionList.DisplayMember = "DisplayName";
             comboBoxDatabaseDistributionList.ValueMember = "Id";
-            //comboBoxDatabaseDistributionList.DataBindings.Add("SelectedValue", _project, "SelectedDistributionListId", true, DataSourceUpdateMode.OnPropertyChanged);
+
+            if (comboBoxDatabaseDistributionList.DataBindings.Count == 0)
+                comboBoxDatabaseDistributionList.DataBindings.Add("SelectedValue", this, nameof(SelectedDistributionListId), true, DataSourceUpdateMode.OnPropertyChanged);
         }
 
         private async Task LoadConnectionsAsync()
@@ -386,7 +399,7 @@ namespace SQLMultiScript.UI.Forms
 
         private async void DatabaseDistributionListForm_Load(object sender, EventArgs e)
         {
-            await BindData();
+            await BindDataAsync();
         }
 
         private void Connections_ListChanged(object sender, ListChangedEventArgs e)
@@ -412,7 +425,7 @@ namespace SQLMultiScript.UI.Forms
 
             if (result == DialogResult.OK)
             {
-                await BindData();
+                await BindDataAsync();
             }
         }
 
@@ -501,14 +514,27 @@ namespace SQLMultiScript.UI.Forms
             UpdateParentCheckState(node.Parent);
         }
 
-        private void BtnNewDatabaseDistribuitionList_Click(object sender, EventArgs e)
+        private async void BtnNewDatabaseDistribuitionList_Click(object sender, EventArgs e)
         {
             string name = Prompt.ShowDialog(Strings.DatabaseDistributionListEnterPrompt, Strings.NewDatabaseDistributionList);
-            
+
             if (!string.IsNullOrWhiteSpace(name))
             {
-                // Crie a lista de distribuição com o nome informado
-                MessageBox.Show(name);
+
+                var result = await _databaseDistributionListService.CreateAsync(name);
+
+                if (!result.Success)
+                {
+                    MessageBox.Show(result.ToString());
+                    return;
+                }
+
+                await BindDataAsync();
+
+                SelectedDistributionListId = result.Value;
+
+
+
             }
         }
     }

@@ -181,6 +181,9 @@
     <value>Attention</value>
   </data>
   <data name="FieldCannotBeEmpty" xml:space="preserve">
-    <value>The field cannot be empty.</value>
+    <value>The field cannot be empty</value>
+  </data>
+  <data name="RecordAlreadyExists" xml:space="preserve">
+    <value>A record with this name already exists</value>
   </data>
 </root>

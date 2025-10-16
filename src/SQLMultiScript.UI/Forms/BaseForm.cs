@@ -1,7 +1,12 @@
-﻿namespace SQLMultiScript.UI.Forms
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace SQLMultiScript.UI.Forms
 {
-    public abstract class BaseForm : Form
+    public abstract class BaseForm : Form, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         protected readonly ToolTip ToolTip = new ToolTip();
 
 
@@ -25,6 +30,23 @@
             int height = (int)(screenSize.Height * percent);
             
             Size = new Size(width, height);
+        }
+
+        
+
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value))
+                return false;
+
+            field = value;
+            OnPropertyChanged(propertyName);
+            return true;
         }
     }
 }

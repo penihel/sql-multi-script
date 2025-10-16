@@ -1,9 +1,13 @@
-﻿namespace SQLMultiScript.Core.Models
+﻿using System.Text.Json.Serialization;
+
+namespace SQLMultiScript.Core.Models
 {
-    public class DatabaseDistributionList : SelectableItem
+    public class DatabaseDistributionList 
     {
         
         public Guid Id { get; set; }
+        
+        [JsonIgnore]
         public string FilePath { get; set; }
         public string DisplayName { get; set; }
 
