@@ -19,19 +19,23 @@ namespace SQLMultiScript.Services
         {
             var list = await ListAsync();
 
-
-
-            if (list.Any(d => d.DisplayName == name))
+            if (list.Any(d => d.Name == name))
             {
                 return Result<Guid>.Fail(Strings.RecordAlreadyExists);
             }
 
             var directoryPath = _pathService.GetDatabaseDistributionListsPath();
 
+            var id = Guid.NewGuid();
+
+            var file = Path.Combine(directoryPath, id.ToString() + ".json");
+
+
             var databaseDistributionList = new DatabaseDistributionList()
             {
-                DisplayName = name,
-                Id = Guid.NewGuid(),
+                Name = name,
+                Id = id,
+                FilePath = file
             };
 
             var databaseDistributionListFile = new DatabaseDistributionListFile()
@@ -39,7 +43,6 @@ namespace SQLMultiScript.Services
                 DatabaseDistributionList = databaseDistributionList,
             };
 
-            var file = Path.Combine(directoryPath, databaseDistributionList.Id.ToString() + ".json");
 
             if (File.Exists(file))
             {
@@ -88,8 +91,30 @@ namespace SQLMultiScript.Services
             }
 
             return retorno
-                .OrderBy(x => x.DisplayName)
+                .OrderBy(x => x.Name)
                 .ToList();
         }
+
+        public async Task<Result<Guid>> SaveAsync(DatabaseDistributionList databaseDistributionList)
+        {
+            var directoryPath = _pathService.GetDatabaseDistributionListsPath();
+
+            var file = databaseDistributionList.FilePath;
+
+            var databaseDistributionListFile = new DatabaseDistributionListFile()
+            {
+                DatabaseDistributionList = databaseDistributionList,
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(databaseDistributionListFile, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            await File.WriteAllTextAsync(file, json);
+
+            return Result<Guid>.Ok(databaseDistributionList.Id);
+        }
     }
+
 }

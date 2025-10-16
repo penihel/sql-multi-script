@@ -105,7 +105,7 @@ namespace SQLMultiScript.UI.Forms
             mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45f));
 
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 70f));
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80f));
 
             Controls.Add(mainTableLayoutPanel);
 
@@ -274,17 +274,28 @@ namespace SQLMultiScript.UI.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             };
 
-            
+
 
             // Database name column
             var colName = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "DatabaseName",
-                HeaderText = Resources.Strings.DatabasesToExecute,
+                HeaderText = Strings.DatabasesToExecute,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 ReadOnly = true
             };
             dataGridViewDatabases.Columns.Add(colName);
+
+
+            // Database name column
+            var colServer = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "ConnectionName",
+                HeaderText = Strings.Connection,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                ReadOnly = true
+            };
+            dataGridViewDatabases.Columns.Add(colServer);
 
             // Panel for the DataGridView
             var listPanel = new Panel
@@ -307,26 +318,17 @@ namespace SQLMultiScript.UI.Forms
 
         private void SetupBottomRow(TableLayoutPanel tableLayoutPanel)
         {
-            // Divider line (Panel)
-            var divider = new Panel
-            {
-                Height = 1,
-                Dock = DockStyle.Top,
-                BackColor = Color.LightGray
-            };
+            
 
             // Button panel
-            var buttonPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Height = 60,
-                Padding = UIConstants.PanelPadding
-            };
+            var buttonPanel = PanelFactory.CreateFlowLayoutPanel(
+                FlowDirection.RightToLeft);
 
             var btnSave = ButtonFactory
                 .Create(ToolTip,
                     Strings.Save,
-                    Images.ic_fluent_save_24_regular);
+                    Images.ic_fluent_save_24_regular,
+                    BtnSave_Click);
 
 
             var btnCancel = ButtonFactory
@@ -334,24 +336,22 @@ namespace SQLMultiScript.UI.Forms
                     Strings.Cancel,
                     Images.ic_fluent_dismiss_24_regular);
 
-            buttonPanel.Controls.Add(btnCancel);
             buttonPanel.Controls.Add(btnSave);
+            buttonPanel.Controls.Add(btnCancel);
 
             // Adiciona o divider e o painel de botões na TableLayoutPanel
             // Cria um painel container para alinhar o divider acima dos botões
-            var bottomContainer = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Height = 60,
+            var bottomContainer = PanelFactory.Create();
 
-            };
             bottomContainer.Controls.Add(buttonPanel);
-            bottomContainer.Controls.Add(divider);
+            bottomContainer.Controls.Add(PanelFactory.CreateDivider());
 
             // Adiciona ao TableLayoutPanel
             tableLayoutPanel.Controls.Add(bottomContainer, 0, 1);
             tableLayoutPanel.SetColumnSpan(bottomContainer, 3);
         }
+
+        
 
 
 
@@ -390,7 +390,7 @@ namespace SQLMultiScript.UI.Forms
 
             foreach (var conn in _connections)
             {
-                var node = new TreeNode(conn.DisplayName)
+                var node = new TreeNode(conn.Name)
                 {
                     Tag = conn, // Store the full object
                     // Do not check the root node
@@ -449,18 +449,16 @@ namespace SQLMultiScript.UI.Forms
             {
                 var conn = (Connection)item.Parent.Tag;
                 var db = (Database)item.Tag;
-                _currentDatabaseDistributionList.Databases.Add(db);
+
+                if (!_currentDatabaseDistributionList.Databases.Any(d => d.DatabaseName == db.DatabaseName && d.ConnectionName == db.ConnectionName))
+                    _currentDatabaseDistributionList.Databases.Add(db);
             }
 
             dataGridViewDatabases.Refresh();
         }
 
 
-        private void AddSelectedDatabasesToSelectedDistributionList()
-        {
 
-
-        }
 
         private async void BtnNew_Click(object sender, EventArgs e)
         {
@@ -581,6 +579,24 @@ namespace SQLMultiScript.UI.Forms
 
 
             }
+        }
+
+        private async void BtnSave_Click(object sender, EventArgs e)
+        {
+           
+            foreach (var item in _databaseDistributionLists)
+            {
+                var result = await _databaseDistributionListService.SaveAsync(item);
+
+                if (!result.Success)
+                {
+                    MessageBox.Show(result.ToString());
+                    return;
+                }
+            }
+
+            DialogResult = DialogResult.OK;
+            Close();
         }
     }
 }

@@ -2,7 +2,6 @@
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
-using System.Data.Common;
 
 namespace SQLMultiScript.Services
 {
@@ -73,7 +72,8 @@ namespace SQLMultiScript.Services
                     var db = new Database
                     {
                         DatabaseName = reader.GetString(0),
-                        Connection = connection
+                        ConnectionName = connection.Name,
+                        
                     };
                     databases.Add(db);
                 }
@@ -81,7 +81,7 @@ namespace SQLMultiScript.Services
             catch (Exception ex)
             {
                 // Aqui você pode logar ou propagar a exceção
-                throw new InvalidOperationException($"Erro ao listar bancos do servidor {connection.DisplayName}", ex);
+                throw new InvalidOperationException($"Erro ao listar bancos do servidor {connection.Name}", ex);
             }
 
             return databases;
@@ -92,9 +92,9 @@ namespace SQLMultiScript.Services
 
             if (connection == null) throw new ArgumentNullException(nameof(connection));
 
-            if (string.IsNullOrEmpty(connection.DisplayName))
+            if (string.IsNullOrEmpty(connection.Name))
             {
-                connection.DisplayName = connection.Server;
+                connection.Name = connection.Server;
             }
 
             if (connection.Id == Guid.Empty)

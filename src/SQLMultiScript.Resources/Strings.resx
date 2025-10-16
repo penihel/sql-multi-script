@@ -192,4 +192,7 @@
   <data name="NoDatabaseSelected" xml:space="preserve">
     <value>No database selected</value>
   </data>
+  <data name="Connection" xml:space="preserve">
+    <value>Connection</value>
+  </data>
 </root>

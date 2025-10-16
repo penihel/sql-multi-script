@@ -10,7 +10,7 @@ namespace SQLMultiScript.Core.Models
         
         [JsonIgnore]
         public string FilePath { get; set; }
-        public string DisplayName { get; set; }
+        public string Name { get; set; }
 
         public BindingList<Database> Databases { get; private set; } = new BindingList<Database>();
     }

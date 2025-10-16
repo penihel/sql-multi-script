@@ -33,7 +33,7 @@ namespace SQLMultiScript.UI
         private void InitializeBindings()
         {
             // Faz o binding dos campos com as propriedades do modelo
-            txtDisplayName.DataBindings.Add(nameof(txtDisplayName.Text), _bindingSource, nameof(Connection.DisplayName), false, DataSourceUpdateMode.OnPropertyChanged);
+            txtDisplayName.DataBindings.Add(nameof(txtDisplayName.Text), _bindingSource, nameof(Connection.Name), false, DataSourceUpdateMode.OnPropertyChanged);
             txtServer.DataBindings.Add(nameof(txtServer.Text), _bindingSource, nameof(Connection.Server), false, DataSourceUpdateMode.OnPropertyChanged);
             cmbAuthentication.DataBindings.Add(nameof(cmbAuthentication.SelectedItem), _bindingSource, nameof(Connection.Auth), false, DataSourceUpdateMode.OnPropertyChanged);
             txtUsername.DataBindings.Add(nameof(txtUsername.Text), _bindingSource, nameof(Connection.UserName), false, DataSourceUpdateMode.OnPropertyChanged);

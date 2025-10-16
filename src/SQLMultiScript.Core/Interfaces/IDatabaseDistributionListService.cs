@@ -6,6 +6,7 @@ namespace SQLMultiScript.Core.Interfaces
     {
         Task<IList<DatabaseDistributionList>> ListAsync();
         Task<Result<Guid>> CreateAsync(string name);
+        Task<Result<Guid>> SaveAsync(DatabaseDistributionList databaseDistributionList);
 
     }
 }

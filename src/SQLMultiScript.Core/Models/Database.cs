@@ -1,10 +1,9 @@
 ﻿namespace SQLMultiScript.Core.Models
 {
-    public class Database : SelectableItem
+    public class Database
     {
         public string DatabaseName { get; set; }
-
-        public Connection Connection { get; set; }
+        public string ConnectionName { get; set; }
 
     }
 }
