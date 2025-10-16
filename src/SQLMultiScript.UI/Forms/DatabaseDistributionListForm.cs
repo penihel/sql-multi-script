@@ -27,7 +27,7 @@ namespace SQLMultiScript.UI.Forms
 
         // Data
         private BindingList<Connection> _connections;
-        private BindingList<DatabaseDistributionList> _databaseDistributionLists;
+        private BindingList<DatabaseDistributionList> _databaseDistributionLists = new BindingList<DatabaseDistributionList>();
 
 
         private DatabaseDistributionList _currentDatabaseDistributionList = null;

@@ -12,6 +12,8 @@ namespace SQLMultiScript.UI.Forms
 {
     public class MainForm : BaseForm
     {
+        private const int TopHeight = 60;
+
         private readonly IProjectService _projectService;
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
         private readonly ILogger _logger;
@@ -166,15 +168,12 @@ namespace SQLMultiScript.UI.Forms
             // -----------------------
             // Painel do grid
             // -----------------------
-            var listPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Padding = UIConstants.PanelPadding
-            };
+            var gridPanel = PanelFactory.Create();
 
-            listPanel.Controls.Add(dataGridViewDatabases);
 
-            parentPanel.Controls.Add(listPanel);    // grid primeiro
+            gridPanel.Controls.Add(dataGridViewDatabases);
+
+            parentPanel.Controls.Add(gridPanel);    // grid primeiro
 
             // -----------------------
             // TableLayoutPanel de Botões
@@ -182,12 +181,12 @@ namespace SQLMultiScript.UI.Forms
             var topTableLayoutPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 60,
+                Height = TopHeight,
                 ColumnCount = 2,
                 RowCount = 1,
             };
             topTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Combo ocupa o espaço todo
-            topTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60F)); // Botão fixo em 50px
+            topTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, TopHeight)); // Botão fixo em 50px
 
             // Cria o ComboBox
             comboBoxDatabaseDistributionList = new ComboBox
@@ -204,7 +203,7 @@ namespace SQLMultiScript.UI.Forms
             topTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
 
             var btnDatabaseDistributionList = ButtonFactory.Create(ToolTip,
-                Resources.Strings.DatabaseDistributionLists,
+                Strings.DatabaseDistributionLists,
                 Images.ic_fluent_database_stack_16_regular,
                 btnDatabaseDistributionList_Click);
 
@@ -305,7 +304,7 @@ namespace SQLMultiScript.UI.Forms
             // -----------------------
             // Painel de Botões
             // -----------------------
-            var buttonPanel = PanelFactory.Create(60, DockStyle.Top);
+            var buttonPanel = PanelFactory.Create(TopHeight, DockStyle.Top);
 
 
 
@@ -314,21 +313,21 @@ namespace SQLMultiScript.UI.Forms
             var btnDown = ButtonFactory.Create(ToolTip,
                 Strings.Down,
                 Images.ic_fluent_arrow_circle_down_24_regular,
-                null,
+                BtnDown_Click,
                 DockStyle.Left);
 
 
             var btnUp = ButtonFactory.Create(ToolTip,
                 Strings.Up,
                 Images.ic_fluent_arrow_circle_up_24_regular,
-                null,
+                BtnUp_Click,
                 DockStyle.Left);
 
 
             var btnRemove = ButtonFactory.Create(ToolTip,
                 Strings.Remove,
                 Images.ic_fluent_delete_24_regular,
-                null,
+                BtnRemove_Click,
                 DockStyle.Left);
 
 
@@ -345,7 +344,7 @@ namespace SQLMultiScript.UI.Forms
             var btnNew = ButtonFactory.Create(ToolTip,
                 Strings.New,
                 Images.ic_fluent_new_24_regular,
-                null,
+                BtnNew_Click,
                 DockStyle.Right);
 
             var btnAdd = ButtonFactory.Create(ToolTip,
@@ -469,23 +468,16 @@ namespace SQLMultiScript.UI.Forms
             // -----------------------
             // Painel de Botões
             // -----------------------
-            var buttonPanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Padding = UIConstants.PanelPadding,
-                Height = 60,
-            };
+            var buttonPanel = PanelFactory.Create(TopHeight, DockStyle.Top);
 
             // Botão Salvar no canto direito
-            var btnSave = new Button
-            {
-                Image = Images.ic_fluent_save_24_regular,
-                Dock = DockStyle.Right,
-                Size = UIConstants.ButtonSize
-            };
-            btnSave.Click += BtnSave_Click;
-            var toolTipBtnSave = new ToolTip();
-            toolTipBtnSave.SetToolTip(btnSave, Resources.Strings.Save);
+            var btnSave = ButtonFactory.Create(ToolTip,
+                Strings.Save,
+                Images.ic_fluent_save_24_regular,
+                BtnSave_Click,
+                DockStyle.Right);
+
+            
             buttonPanel.Controls.Add(btnSave);
 
 
@@ -541,7 +533,7 @@ namespace SQLMultiScript.UI.Forms
         {
             dataGridViewScripts.DataSource = _currentProject.Scripts;
             comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
-            comboBoxDatabaseDistributionList.DisplayMember = "DisplayName";
+            comboBoxDatabaseDistributionList.DisplayMember = "Name";
             comboBoxDatabaseDistributionList.ValueMember = "Id";
             comboBoxDatabaseDistributionList.DataBindings.Add("SelectedValue", _currentProject, "SelectedDistributionListId", true, DataSourceUpdateMode.OnPropertyChanged);
 
