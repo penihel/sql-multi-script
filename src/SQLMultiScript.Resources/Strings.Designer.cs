@@ -196,6 +196,24 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No database selected.
+        /// </summary>
+        public static string NoDatabaseSelected {
+            get {
+                return ResourceManager.GetString("NoDatabaseSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No distribution list selected.
+        /// </summary>
+        public static string NoDistributionListSelected {
+            get {
+                return ResourceManager.GetString("NoDistributionListSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to OK.
         /// </summary>
         public static string OK {

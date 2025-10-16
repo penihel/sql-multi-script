@@ -186,4 +186,10 @@
   <data name="RecordAlreadyExists" xml:space="preserve">
     <value>A record with this name already exists</value>
   </data>
+  <data name="NoDistributionListSelected" xml:space="preserve">
+    <value>No distribution list selected</value>
+  </data>
+  <data name="NoDatabaseSelected" xml:space="preserve">
+    <value>No database selected</value>
+  </data>
 </root>

@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace SQLMultiScript.Core.Models
 {
@@ -11,6 +12,6 @@ namespace SQLMultiScript.Core.Models
         public string FilePath { get; set; }
         public string DisplayName { get; set; }
 
-        public List<Database> Databases { get; private set; } = new List<Database>();
+        public BindingList<Database> Databases { get; private set; } = new BindingList<Database>();
     }
 }

@@ -30,13 +30,36 @@ namespace SQLMultiScript.UI.Forms
         private BindingList<DatabaseDistributionList> _databaseDistributionLists;
 
 
+        private DatabaseDistributionList _currentDatabaseDistributionList = null;
+
         //Properties
         private Guid _selectedDistributionListId;
 
         public Guid SelectedDistributionListId
         {
             get => _selectedDistributionListId;
-            set => SetProperty(ref _selectedDistributionListId, value);
+            set
+            {
+                if (SetProperty(ref _selectedDistributionListId, value))
+                {
+                    LoadCurrentDistributionList();
+                }
+            }
+        }
+        private void LoadCurrentDistributionList()
+        {
+            if (_selectedDistributionListId == Guid.Empty)
+            {
+                _currentDatabaseDistributionList = null;
+                dataGridViewDatabases.DataSource = null;
+                return;
+            }
+
+            _currentDatabaseDistributionList =
+                _databaseDistributionLists
+                .FirstOrDefault(x => x.Id == _selectedDistributionListId);
+
+            dataGridViewDatabases.DataSource = _currentDatabaseDistributionList?.Databases;
         }
 
 
@@ -158,10 +181,10 @@ namespace SQLMultiScript.UI.Forms
             // Add Button
             var btnAdd = ButtonFactory.Create(ToolTip,
                 Strings.Add,
-                Images.ic_fluent_arrow_circle_right_24_regular, 
+                Images.ic_fluent_arrow_circle_right_24_regular,
                 BtnAdd_Click);
 
-            
+
 
 
             // Remove Button
@@ -169,7 +192,7 @@ namespace SQLMultiScript.UI.Forms
                 Strings.Remove,
                 Images.ic_fluent_arrow_circle_left_24_regular,
                 BtnRemove_Click);
-            
+
 
             flowLayoutPanel.Controls.Add(btnAdd);
             flowLayoutPanel.Controls.Add(btnRemove);
@@ -251,19 +274,13 @@ namespace SQLMultiScript.UI.Forms
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
             };
 
-            // Checkbox column
-            var colSelected = new DataGridViewCheckBoxColumn
-            {
-                DataPropertyName = "Selected",
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-            };
-            dataGridViewDatabases.Columns.Add(colSelected);
+            
 
             // Database name column
             var colName = new DataGridViewTextBoxColumn
             {
-                DataPropertyName = "DisplayName",
-                HeaderText = Resources.Strings.Database,
+                DataPropertyName = "DatabaseName",
+                HeaderText = Resources.Strings.DatabasesToExecute,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 ReadOnly = true
             };
@@ -406,7 +423,43 @@ namespace SQLMultiScript.UI.Forms
 
         private void BtnAdd_Click(object sender, EventArgs e)
         {
-            
+            if (SelectedDistributionListId == Guid.Empty)
+            {
+                MessageBox.Show(Strings.NoDistributionListSelected);
+                comboBoxDatabaseDistributionList.Focus();
+                SendKeys.Send("{F4}");
+                return;
+            }
+
+            var selectedLeafNodes = treeViewToAdd
+                .Nodes
+                .Cast<TreeNode>()
+                .SelectMany(n => TreeNodeUtil.GetAllNodes(n))
+                .Where(n => n.Nodes.Count == 0 && n.Checked)
+                .ToList();
+
+            if (selectedLeafNodes.Count == 0)
+            {
+                MessageBox.Show(Strings.NoDatabaseSelected);
+                return;
+
+            }
+
+            foreach (var item in selectedLeafNodes)
+            {
+                var conn = (Connection)item.Parent.Tag;
+                var db = (Database)item.Tag;
+                _currentDatabaseDistributionList.Databases.Add(db);
+            }
+
+            dataGridViewDatabases.Refresh();
+        }
+
+
+        private void AddSelectedDatabasesToSelectedDistributionList()
+        {
+
+
         }
 
         private async void BtnNew_Click(object sender, EventArgs e)
@@ -437,10 +490,11 @@ namespace SQLMultiScript.UI.Forms
                         {
                             var dbNode = new TreeNode(db.DatabaseName)
                             {
-                                Tag = new { Connection = conn, Database = db }, // Store info
+                                Tag = db, // Store info
                                 Checked = false,
                                 ImageKey = "database",
-                                SelectedImageKey = "database"
+                                SelectedImageKey = "database",
+
                             };
                             e.Node.Nodes.Add(dbNode);
                         }
