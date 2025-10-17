@@ -9,7 +9,7 @@ namespace SQLMultiScript.UI.Forms
 {
     public class DatabaseDistributionListForm : BaseForm
     {
-        private const int TopHeight = 60;
+        private const int TopHeight = 70;
         private const int FooterpHeight = 70;
 
         // Services
@@ -191,10 +191,8 @@ namespace SQLMultiScript.UI.Forms
             parentPanel.Controls.Add(comboBoxDatabaseDistributionList);
 
 
-            comboBoxDatabaseDistributionList
-                .CenterVertically()
-                .StretchToNextSibling();
-            
+            comboBoxDatabaseDistributionList.AlignAndStretch();
+
 
         }
 
@@ -242,18 +240,15 @@ namespace SQLMultiScript.UI.Forms
 
 
             parentPanel.Controls.Add(treeViewToAdd);
-            //parentPanel.Controls.Add(label);
+            parentPanel.Controls.Add(label);
         }
 
         private void SetupCenterBody(Panel parentPanel)
         {
-            var flowLayoutPanel = PanelFactory.CreateFlowLayoutPanel(FlowDirection.TopDown)
-                .Customize(c =>
-                {
-                    c.Anchor = AnchorStyles.None;
-                    c.AutoSize = true;
-                });
+            var flowLayoutPanel = PanelFactory.CreateFlowLayoutPanel(FlowDirection.TopDown);
 
+            
+            flowLayoutPanel.Anchor = AnchorStyles.None;
 
             // Add Button
             var btnAdd = ButtonFactory.Create(ToolTip,
@@ -276,6 +271,9 @@ namespace SQLMultiScript.UI.Forms
 
             // Add to TableLayout
             parentPanel.Controls.Add(flowLayoutPanel);
+            parentPanel.BackColor = Color.Pink;
+            flowLayoutPanel.BackColor = Color.Green;
+            
         }
 
         private void SetupRightBody(Panel parentPanel)
@@ -334,34 +332,27 @@ namespace SQLMultiScript.UI.Forms
         {
 
 
-            // Button panel
-            var buttonPanel = PanelFactory.CreateFlowLayoutPanel(
-                FlowDirection.RightToLeft);
-
             var btnSave = ButtonFactory
                 .Create(ToolTip,
                     Strings.Save,
                     Images.ic_fluent_save_24_regular,
-                    BtnSave_Click);
+                    BtnSave_Click,
+                    DockStyle.Right);
 
 
             var btnCancel = ButtonFactory
                 .Create(ToolTip,
                     Strings.Cancel,
-                    Images.ic_fluent_dismiss_24_regular);
+                    Images.ic_fluent_dismiss_24_regular,
+                    null,
+                    DockStyle.Right);
 
-            buttonPanel.Controls.Add(btnSave);
-            buttonPanel.Controls.Add(btnCancel);
-
-            // Adiciona o divider e o painel de botões na TableLayoutPanel
-            // Cria um painel container para alinhar o divider acima dos botões
-            var bottomContainer = PanelFactory.Create();
-
-            bottomContainer.Controls.Add(buttonPanel);
-            bottomContainer.Controls.Add(PanelFactory.CreateDivider());
+          
+            
 
             // Adiciona ao TableLayoutPanel
-            parentPanel.Controls.Add(bottomContainer);
+            parentPanel.Controls.Add(btnSave);
+            parentPanel.Controls.Add(btnCancel);
 
         }
 

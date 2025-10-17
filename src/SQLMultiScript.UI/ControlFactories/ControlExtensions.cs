@@ -41,22 +41,37 @@
             // Acha o próximo irmão à direita
             var nextSibling = siblings.FirstOrDefault(c => c.Left > control.Left);
 
+            // Considera padding do pai no cálculo
+            int leftEdge = parent.Padding.Left;
+            int rightEdge;
+
             if (nextSibling != null)
             {
-                int rightEdge = nextSibling.Left;
-                int newWidth = rightEdge - control.Left - control.Margin.Right;
-                control.Width = Math.Max(0, newWidth);
+                rightEdge = nextSibling.Left - nextSibling.Margin.Left;
             }
             else
             {
                 // Se não tiver irmão à direita, estica até o final do parent
-                int rightEdge = parent.ClientSize.Width - control.Margin.Right;
-                int newWidth = rightEdge - control.Left;
-                control.Width = Math.Max(0, newWidth);
+                rightEdge = parent.ClientSize.Width - parent.Padding.Right;
             }
+
+            // Calcula nova largura
+            int newWidth = rightEdge - control.Left - control.Margin.Right;
+
+            // Garante que não seja negativa
+            control.Width = Math.Max(0, newWidth);
 
             return control;
         }
+
+
+        public static Control AlignAndStretch(this Control control)
+        {
+            return control
+                .CenterVertically()
+                .StretchToNextSibling();
+        }
+
 
 
     }
