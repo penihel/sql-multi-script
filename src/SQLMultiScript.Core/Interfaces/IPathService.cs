@@ -4,5 +4,6 @@
     {
         string GetConnectionsPath();
         string GetDatabaseDistributionListsPath();
+        string GetNewValidJsonFileName(string path, string text);
     }
 }

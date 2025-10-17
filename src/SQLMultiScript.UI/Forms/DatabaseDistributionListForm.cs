@@ -31,36 +31,31 @@ namespace SQLMultiScript.UI.Forms
         private BindingList<DatabaseDistributionList> _databaseDistributionLists = new BindingList<DatabaseDistributionList>();
 
 
-        private DatabaseDistributionList _currentDatabaseDistributionList = null;
+        
 
         //Properties
-        private Guid _selectedDistributionListId;
+        private DatabaseDistributionList _selectedDistributionList;
 
-        public Guid SelectedDistributionListId
+        public DatabaseDistributionList SelectedDistributionList
         {
-            get => _selectedDistributionListId;
+            get => _selectedDistributionList;
             set
             {
-                if (SetProperty(ref _selectedDistributionListId, value))
+                if (SetProperty(ref _selectedDistributionList, value))
                 {
-                    LoadCurrentDistributionList();
+                    SelectedDistributionListChanged();
                 }
             }
         }
-        private void LoadCurrentDistributionList()
+        private void SelectedDistributionListChanged()
         {
-            if (_selectedDistributionListId == Guid.Empty)
+            if (_selectedDistributionList == null)
             {
-                _currentDatabaseDistributionList = null;
                 dataGridViewDatabases.DataSource = null;
                 return;
             }
 
-            _currentDatabaseDistributionList =
-                _databaseDistributionLists
-                .FirstOrDefault(x => x.Id == _selectedDistributionListId);
-
-            dataGridViewDatabases.DataSource = _currentDatabaseDistributionList?.Databases;
+            dataGridViewDatabases.DataSource = _selectedDistributionList?.Databases;
         }
 
 
@@ -390,10 +385,10 @@ namespace SQLMultiScript.UI.Forms
 
             comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
             comboBoxDatabaseDistributionList.DisplayMember = "Name";
-            comboBoxDatabaseDistributionList.ValueMember = "Id";
+            comboBoxDatabaseDistributionList.ValueMember = "Name";
 
             if (comboBoxDatabaseDistributionList.DataBindings.Count == 0)
-                comboBoxDatabaseDistributionList.DataBindings.Add("SelectedValue", this, nameof(SelectedDistributionListId), true, DataSourceUpdateMode.OnPropertyChanged);
+                comboBoxDatabaseDistributionList.DataBindings.Add("SelectedItem", this, nameof(SelectedDistributionList), true, DataSourceUpdateMode.OnPropertyChanged);
         }
 
         private async Task LoadConnectionsAsync()
@@ -447,7 +442,7 @@ namespace SQLMultiScript.UI.Forms
 
         private void BtnAdd_Click(object sender, EventArgs e)
         {
-            if (SelectedDistributionListId == Guid.Empty)
+            if (SelectedDistributionList == null)
             {
                 MessageBox.Show(Strings.NoDistributionListSelected);
                 comboBoxDatabaseDistributionList.Focus();
@@ -474,8 +469,8 @@ namespace SQLMultiScript.UI.Forms
                 var conn = (Connection)item.Parent.Tag;
                 var db = (Database)item.Tag;
 
-                if (!_currentDatabaseDistributionList.Databases.Any(d => d.DatabaseName == db.DatabaseName && d.ConnectionName == db.ConnectionName))
-                    _currentDatabaseDistributionList.Databases.Add(db);
+                if (!SelectedDistributionList.Databases.Any(d => d.DatabaseName == db.DatabaseName && d.ConnectionName == db.ConnectionName))
+                    SelectedDistributionList.Databases.Add(db);
             }
 
             dataGridViewDatabases.Refresh();
@@ -598,7 +593,7 @@ namespace SQLMultiScript.UI.Forms
 
                 await BindDataAsync();
 
-                SelectedDistributionListId = result.Value;
+                SelectedDistributionList = result.Value;
 
 
 

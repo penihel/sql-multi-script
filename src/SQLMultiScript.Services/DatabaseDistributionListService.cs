@@ -15,27 +15,26 @@ namespace SQLMultiScript.Services
             _pathService = pathService;
         }
 
-        public async Task<Result<Guid>> CreateAsync(string name)
+        public async Task<Result<DatabaseDistributionList>> CreateAsync(string name)
         {
             var list = await ListAsync();
 
             if (list.Any(d => d.Name == name))
             {
-                return Result<Guid>.Fail(Strings.RecordAlreadyExists);
+                return Result<DatabaseDistributionList>.Fail(Strings.RecordAlreadyExists);
             }
 
             var directoryPath = _pathService.GetDatabaseDistributionListsPath();
 
-            var id = Guid.NewGuid();
+            var fileName = _pathService.GetNewValidJsonFileName(_pathService.GetDatabaseDistributionListsPath(), name);
 
-            var file = Path.Combine(directoryPath, id.ToString() + ".json");
+            
 
 
             var databaseDistributionList = new DatabaseDistributionList()
             {
                 Name = name,
-                Id = id,
-                FilePath = file
+                FilePath = fileName
             };
 
             var databaseDistributionListFile = new DatabaseDistributionListFile()
@@ -44,9 +43,9 @@ namespace SQLMultiScript.Services
             };
 
 
-            if (File.Exists(file))
+            if (File.Exists(fileName))
             {
-                return Result<Guid>.Fail(Strings.RecordAlreadyExists);
+                return Result<DatabaseDistributionList>.Fail(Strings.RecordAlreadyExists);
 
             }
 
@@ -55,9 +54,9 @@ namespace SQLMultiScript.Services
                 WriteIndented = true
             });
 
-            await File.WriteAllTextAsync(file, json);
+            await File.WriteAllTextAsync(fileName, json);
 
-            return Result<Guid>.Ok(databaseDistributionList.Id);
+            return Result<DatabaseDistributionList>.Ok(databaseDistributionList);
         }
 
         public async Task<IList<DatabaseDistributionList>> ListAsync()
@@ -95,9 +94,9 @@ namespace SQLMultiScript.Services
                 .ToList();
         }
 
-        public async Task<Result<Guid>> SaveAsync(DatabaseDistributionList databaseDistributionList)
+        public async Task<Result> SaveAsync(DatabaseDistributionList databaseDistributionList)
         {
-            var directoryPath = _pathService.GetDatabaseDistributionListsPath();
+            
 
             var file = databaseDistributionList.FilePath;
 
@@ -113,7 +112,7 @@ namespace SQLMultiScript.Services
 
             await File.WriteAllTextAsync(file, json);
 
-            return Result<Guid>.Ok(databaseDistributionList.Id);
+            return Result.Ok();
         }
     }
 

@@ -5,8 +5,8 @@ namespace SQLMultiScript.Core.Interfaces
     public interface IDatabaseDistributionListService
     {
         Task<IList<DatabaseDistributionList>> ListAsync();
-        Task<Result<Guid>> CreateAsync(string name);
-        Task<Result<Guid>> SaveAsync(DatabaseDistributionList databaseDistributionList);
+        Task<Result<DatabaseDistributionList>> CreateAsync(string name);
+        Task<Result> SaveAsync(DatabaseDistributionList databaseDistributionList);
 
     }
 }

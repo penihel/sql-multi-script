@@ -3,6 +3,7 @@ using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using SQLMultiScript.Core.Models.Files;
+using SQLMultiScript.Resources;
 
 namespace SQLMultiScript.Services
 {
@@ -76,6 +77,7 @@ namespace SQLMultiScript.Services
                     {
                         DatabaseName = reader.GetString(0),
                         ConnectionName = connection.Name,
+                        Selected = true
                         
                     };
                     databases.Add(db);
@@ -90,7 +92,7 @@ namespace SQLMultiScript.Services
             return databases;
         }
 
-        public async Task<Result<Guid>> SaveAsync(Connection connection)
+        public async Task<Result> SaveAsync(Connection connection)
         {
 
             if (connection == null) throw new ArgumentNullException(nameof(connection));
@@ -100,17 +102,22 @@ namespace SQLMultiScript.Services
                 connection.Name = connection.Server;
             }
 
-            if (connection.Id == Guid.Empty)
+            var list = await ListAsync();
+
+            if (list.Any(d => d.Name == connection.Name))
             {
-                connection.Id = Guid.NewGuid();
+                return Result.Fail(Strings.RecordAlreadyExists);
             }
+
 
             if (string.IsNullOrEmpty(connection.FilePath))
             {
-                var fileName = connection.Id.ToString() + ".json";
 
+                var fileName = _pathService.GetNewValidJsonFileName(_pathService.GetConnectionsPath(), connection.Name);
 
-                connection.FilePath = Path.Combine(_pathService.GetConnectionsPath(), fileName);
+                
+
+                connection.FilePath = fileName;
             }
 
             var connectionFile = new ConnectionFile()
@@ -126,7 +133,7 @@ namespace SQLMultiScript.Services
 
             await File.WriteAllTextAsync(connection.FilePath, json);
 
-            return Result<Guid>.Ok(connection.Id);
+            return Result.Ok();
 
         }
 

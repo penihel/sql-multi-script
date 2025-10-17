@@ -10,12 +10,12 @@ namespace SQLMultiScript.Core.Models
     {
         [JsonIgnore]
         public string FilePath { get; set; }
-        public string Version { get; set; }
-        public string DisplayName { get; set; }
+        
+        public string Name { get; set; }
         public BindingList<Script> Scripts { get; set; } = new BindingList<Script>();
 
 
-        public Guid? SelectedDistributionListId { get; set; }
+        public string SelectedDistributionList { get; set; }
 
         
 

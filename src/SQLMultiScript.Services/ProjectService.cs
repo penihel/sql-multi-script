@@ -16,15 +16,15 @@ namespace SQLMultiScript.Services
         {
             var project = new Project
             {
-                Version = Constants.ApplicationVersion,
-                DisplayName = "New Project",
+                
+                Name = "New Project",
                 Scripts = new System.ComponentModel.BindingList<Script>()
                 {
                     new Script()
                     {
                         DisplayName = "Script1.sql",
-                        Selected = true,
-                        Order = 1
+                        Selected = true
+                        
                     }
                 }
             };

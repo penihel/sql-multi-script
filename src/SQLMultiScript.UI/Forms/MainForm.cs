@@ -21,7 +21,10 @@ namespace SQLMultiScript.UI.Forms
 
         private Project _currentProject = null;
         private Script _activeScript = null;
+
+
         private BindingList<DatabaseDistributionList> _databaseDistributionLists;
+
 
 
         private DataGridView
@@ -32,9 +35,39 @@ namespace SQLMultiScript.UI.Forms
         private TextBox logBox;
         private MenuStrip menuStrip;
 
-        
+
 
         private ComboBox comboBoxDatabaseDistributionList;
+
+        //Properties
+        private DatabaseDistributionList _selectedDistributionList;
+
+        public DatabaseDistributionList SelectedDistributionList
+        {
+            get => _selectedDistributionList;
+            set
+            {
+                if (SetProperty(ref _selectedDistributionList, value))
+                {
+                    SelectedDistributionListChanged();
+                }
+            }
+        }
+        private void SelectedDistributionListChanged()
+        {
+            if (_selectedDistributionList == null)
+            {
+
+                dataGridViewDatabases.DataSource = null;
+                _currentProject.SelectedDistributionList = null;
+                return;
+            }
+
+            _currentProject.SelectedDistributionList = _selectedDistributionList.Name;
+
+
+            dataGridViewDatabases.DataSource = _selectedDistributionList?.Databases;
+        }
 
 
 
@@ -151,15 +184,26 @@ namespace SQLMultiScript.UI.Forms
             };
             dataGridViewDatabases.Columns.Add(colSelected);
 
-            // Nome do Script
+            // Database name column
             var colName = new DataGridViewTextBoxColumn
             {
-                DataPropertyName = "DisplayName",
-                HeaderText = Resources.Strings.Database,
+                DataPropertyName = "DatabaseName",
+                HeaderText = Strings.DatabasesToExecute,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 ReadOnly = true
             };
             dataGridViewDatabases.Columns.Add(colName);
+
+
+            // Database name column
+            var colServer = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "ConnectionName",
+                HeaderText = Strings.Connection,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                ReadOnly = true
+            };
+            dataGridViewDatabases.Columns.Add(colServer);
 
             dataGridViewDatabases.CellClick += DataGridViewDatabases_CellClick;
 
@@ -332,7 +376,7 @@ namespace SQLMultiScript.UI.Forms
 
 
 
-            
+
 
 
             buttonPanel.Controls.Add(btnRemove);
@@ -359,7 +403,7 @@ namespace SQLMultiScript.UI.Forms
 
 
 
-            
+
 
             parentPanel.Controls.Add(buttonPanel);  // botões por cima
 
@@ -477,7 +521,7 @@ namespace SQLMultiScript.UI.Forms
                 BtnSave_Click,
                 DockStyle.Right);
 
-            
+
             buttonPanel.Controls.Add(btnSave);
 
 
@@ -520,7 +564,15 @@ namespace SQLMultiScript.UI.Forms
                     ShowScriptOnEditor(firstScript);
                 }
 
+                if (!string.IsNullOrEmpty(_currentProject.SelectedDistributionList))
+                {
+                    SelectedDistributionList = _databaseDistributionLists?.FirstOrDefault(d => d.Name == _currentProject.SelectedDistributionList);
+                }
+                else
+                {
+                    SelectedDistributionList = _databaseDistributionLists?.FirstOrDefault();
 
+                }
 
             }
 
@@ -534,8 +586,8 @@ namespace SQLMultiScript.UI.Forms
             dataGridViewScripts.DataSource = _currentProject.Scripts;
             comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
             comboBoxDatabaseDistributionList.DisplayMember = "Name";
-            comboBoxDatabaseDistributionList.ValueMember = "Id";
-            comboBoxDatabaseDistributionList.DataBindings.Add("SelectedValue", _currentProject, "SelectedDistributionListId", true, DataSourceUpdateMode.OnPropertyChanged);
+            comboBoxDatabaseDistributionList.ValueMember = "Name";
+            comboBoxDatabaseDistributionList.DataBindings.Add("SelectedItem", this, nameof(SelectedDistributionList), true, DataSourceUpdateMode.OnPropertyChanged);
 
             // Atualiza grid
             dataGridViewScripts.Refresh();
@@ -637,13 +689,13 @@ namespace SQLMultiScript.UI.Forms
                 using var sfd = new SaveFileDialog
                 {
                     Filter = "SQL Multi Script Project Files (*.smsjsonproj)|*.smsjsonproj",
-                    FileName = project.DisplayName ?? "NewProject.smsjsonproj"
+                    FileName = project.Name ?? "NewProject.smsjsonproj"
                 };
 
                 if (sfd.ShowDialog() != DialogResult.OK) return false;
 
                 project.FilePath = sfd.FileName;
-                project.DisplayName = Path.GetFileNameWithoutExtension(sfd.FileName);
+                project.Name = Path.GetFileNameWithoutExtension(sfd.FileName);
             }
 
             try
@@ -676,12 +728,9 @@ namespace SQLMultiScript.UI.Forms
         private async Task LoadDistribuitionListsAsync()
         {
 
-
-
-
-
             _databaseDistributionLists =
                 new BindingList<DatabaseDistributionList>(await _databaseDistributionListService.ListAsync());
+
 
 
         }
@@ -734,7 +783,6 @@ namespace SQLMultiScript.UI.Forms
             _currentProject.Scripts.Add(new Script
             {
                 DisplayName = $"Script{_currentProject.Scripts.Count + 1}.sql",
-                Order = _currentProject.Scripts.Count + 1,
                 Selected = true
             });
         }
@@ -881,9 +929,11 @@ namespace SQLMultiScript.UI.Forms
         {
             var databaseDistributionListForm = _serviceProvider.GetRequiredService<DatabaseDistributionListForm>();
 
-            databaseDistributionListForm.SelectedDistributionListId = _currentProject.SelectedDistributionListId ?? Guid.Empty;
 
             var result = databaseDistributionListForm.ShowDialog(this);
+
+            databaseDistributionListForm.SelectedDistributionList = SelectedDistributionList;
+
         }
 
         private void RemoveScripts()
