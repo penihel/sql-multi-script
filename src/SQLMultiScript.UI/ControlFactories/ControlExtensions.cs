@@ -23,7 +23,24 @@
 
             return child;
         }
+        public static Control CenterHorizontally(this Control child)
+        {
+            var parent = child?.Parent;
+            if (parent == null || child == null)
+                return child;
 
+            int newLeft = Math.Max(0, (parent.ClientSize.Width - child.Width) / 2);
+            child.Left = newLeft;
+
+            return child;
+        }
+
+        public static Control CenterHorizontallyAndVertically(this Control child)
+        {
+            return child
+                .CenterVertically()
+                .CenterHorizontally();
+        }
         public static Control StretchToNextSibling(this Control control)
         {
             if (control?.Parent == null)

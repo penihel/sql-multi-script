@@ -245,10 +245,27 @@ namespace SQLMultiScript.UI.Forms
 
         private void SetupCenterBody(Panel parentPanel)
         {
-            var flowLayoutPanel = PanelFactory.CreateFlowLayoutPanel(FlowDirection.TopDown);
+
+            var table = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                
+            };
+
+
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+            
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
 
             
-            flowLayoutPanel.Anchor = AnchorStyles.None;
+            var flow = PanelFactory.CreateFlowLayoutPanel(FlowDirection.TopDown)
+                .Customize(c => c.AutoSize = true)
+                .Customize(c => c.Anchor = AnchorStyles.None);
+            
 
             // Add Button
             var btnAdd = ButtonFactory.Create(ToolTip,
@@ -256,25 +273,27 @@ namespace SQLMultiScript.UI.Forms
                 Images.ic_fluent_arrow_circle_right_24_regular,
                 BtnAdd_Click);
 
-
-
-
             // Remove Button
             var btnRemove = ButtonFactory.Create(ToolTip,
                 Strings.Remove,
                 Images.ic_fluent_arrow_circle_left_24_regular,
                 BtnRemove_Click);
 
+            
+            // Adiciona botões ao flow
+            flow.Controls.Add(btnAdd);
+            flow.Controls.Add(btnRemove);
 
-            flowLayoutPanel.Controls.Add(btnAdd);
-            flowLayoutPanel.Controls.Add(btnRemove);
+            
+            table.Controls.Add(flow, 0, 1);
 
-            // Add to TableLayout
-            parentPanel.Controls.Add(flowLayoutPanel);
-            parentPanel.BackColor = Color.Pink;
-            flowLayoutPanel.BackColor = Color.Green;
+            
+            parentPanel.Controls.Add(table);
+
+            
             
         }
+
 
         private void SetupRightBody(Panel parentPanel)
         {
@@ -347,8 +366,8 @@ namespace SQLMultiScript.UI.Forms
                     null,
                     DockStyle.Right);
 
-          
-            
+
+
 
             // Adiciona ao TableLayoutPanel
             parentPanel.Controls.Add(btnSave);
