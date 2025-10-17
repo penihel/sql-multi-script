@@ -11,7 +11,7 @@ namespace SQLMultiScript.UI.Forms
     {
         private const int TopHeight = 60;
         private const int FooterpHeight = 70;
-        
+
         // Services
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
         private readonly IConnectionService _connectionService;
@@ -21,7 +21,7 @@ namespace SQLMultiScript.UI.Forms
         private DataGridView dataGridViewDatabases;
         private TreeView treeViewToAdd;
 
-        
+
         private ComboBox comboBoxDatabaseDistributionList;
 
 
@@ -121,14 +121,6 @@ namespace SQLMultiScript.UI.Forms
 
             var divider = PanelFactory.CreateDivider();
 
-            SetupLeftTop(panelCol0Row0);
-            SetupLeftBody(panelCol0Row1);
-            SetupCenterBody(panelCol1Row1);
-            SetupRightTop(panelCol2Row0);
-            SetupRightBody(panelCol2Row1);
-            SetupBottomRow(panelBottonCol0);
-
-
             mainTableLayoutPanel.Controls.Add(panelCol0Row0, 0, 0);
             mainTableLayoutPanel.Controls.Add(panelCol0Row1, 0, 1);
             mainTableLayoutPanel.Controls.Add(panelCol1Row0, 1, 0);
@@ -142,23 +134,34 @@ namespace SQLMultiScript.UI.Forms
 
 
             Controls.Add(mainTableLayoutPanel);
+
+
+            SetupLeftTop(panelCol0Row0);
+            SetupLeftBody(panelCol0Row1);
+            SetupCenterBody(panelCol1Row1);
+            SetupRightTop(panelCol2Row0);
+            SetupRightBody(panelCol2Row1);
+            SetupBottomRow(panelBottonCol0);
+
+
+
         }
 
         private void SetupRightTop(Panel parentPanel)
         {
-            
-            
+
+
 
             // ComboBox for distribution lists
             comboBoxDatabaseDistributionList = new ComboBox
             {
-                //Anchor = AnchorStyles.Left | AnchorStyles.Right,
+                Anchor = AnchorStyles.Left | AnchorStyles.Right,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                Dock = DockStyle.Fill,
+                //Dock = DockStyle.Left
             };
-            
 
-            
+
+
             // New Distribution List Button
             var btnNewDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
                 Strings.NewDatabaseDistributionList,
@@ -180,16 +183,18 @@ namespace SQLMultiScript.UI.Forms
                 null,
                 DockStyle.Right);
 
-            parentPanel.Controls.Add(comboBoxDatabaseDistributionList);
 
             parentPanel.Controls.Add(btnNewDatabaseDistribuitionList);
             parentPanel.Controls.Add(btnRenameDatabaseDistribuitionList);
             parentPanel.Controls.Add(btnRemoveDatabaseDistribuitionList);
 
+            parentPanel.Controls.Add(comboBoxDatabaseDistributionList);
 
+
+            comboBoxDatabaseDistributionList
+                .CenterVertically()
+                .StretchToNextSibling();
             
-
-
 
         }
 
@@ -208,7 +213,7 @@ namespace SQLMultiScript.UI.Forms
 
         private void SetupLeftBody(Panel parentPanel)
         {
-            
+
 
             var label = LabelFactory.Create(Strings.DatabasesToAdd, DockStyle.Top);
 
@@ -234,7 +239,7 @@ namespace SQLMultiScript.UI.Forms
             treeViewToAdd.ImageList = imageList;
 
 
-            
+
 
             parentPanel.Controls.Add(treeViewToAdd);
             //parentPanel.Controls.Add(label);
@@ -275,7 +280,7 @@ namespace SQLMultiScript.UI.Forms
 
         private void SetupRightBody(Panel parentPanel)
         {
-            
+
 
             // DataGridView for databases
             dataGridViewDatabases = new DataGridView
@@ -316,7 +321,7 @@ namespace SQLMultiScript.UI.Forms
             };
             dataGridViewDatabases.Columns.Add(colServer);
 
-            
+
 
 
 
@@ -327,7 +332,7 @@ namespace SQLMultiScript.UI.Forms
 
         private void SetupBottomRow(Panel parentPanel)
         {
-            
+
 
             // Button panel
             var buttonPanel = PanelFactory.CreateFlowLayoutPanel(
@@ -357,10 +362,10 @@ namespace SQLMultiScript.UI.Forms
 
             // Adiciona ao TableLayoutPanel
             parentPanel.Controls.Add(bottomContainer);
-            
+
         }
 
-        
+
 
 
 
@@ -592,7 +597,7 @@ namespace SQLMultiScript.UI.Forms
 
         private async void BtnSave_Click(object sender, EventArgs e)
         {
-           
+
             foreach (var item in _databaseDistributionLists)
             {
                 var result = await _databaseDistributionListService.SaveAsync(item);
