@@ -77,7 +77,6 @@ namespace SQLMultiScript.Services
                     {
                         DatabaseName = reader.GetString(0),
                         ConnectionName = connection.Name,
-                        Connection = connection,
                         Selected = true
                         
                     };

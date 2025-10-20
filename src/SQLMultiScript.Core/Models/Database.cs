@@ -6,9 +6,6 @@ namespace SQLMultiScript.Core.Models
     {
         public string DatabaseName { get; set; }
         public string ConnectionName { get; set; }
-
-        [JsonIgnore]
-        public Connection Connection { get; set; }
-
+        
     }
 }

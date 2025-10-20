@@ -6,7 +6,9 @@ using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using SQLMultiScript.Resources;
+using SQLMultiScript.Services;
 using SQLMultiScript.UI.ControlFactories;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Data;
 
@@ -1048,69 +1050,88 @@ namespace SQLMultiScript.UI.Forms
                     return;
                 }
 
-               
+                Log($"Iniciando execução em {selectedDatabases.Count} banco(s) com {selectedScripts.Count} script(s)...");
 
                 // Dicionário: índice do resultado → DataTable consolidado
-                var consolidatedResults = new Dictionary<int, DataTable>();
+                var consolidatedResults = new ConcurrentDictionary<int, DataTable>();
 
-                foreach (var db in selectedDatabases)
+                // Semaphore para limitar o número de execuções simultâneas
+                using var semaphore = new SemaphoreSlim(1);
+
+
+                await _scriptExecutorService.LoadConnectionsAsync();
+
+                // Cria uma lista de tasks para todos os bancos
+                var tasks = selectedDatabases.Select(async db =>
                 {
+                    await semaphore.WaitAsync();
                     try
                     {
                         foreach (var script in selectedScripts)
                         {
-                            var dataSet = await _scriptExecutorService.ExecuteAsync(db, script);
-
-                            for (int resultIndex = 0; resultIndex < dataSet.Tables.Count; resultIndex++)
+                            try
                             {
-                                var dt = dataSet.Tables[resultIndex];
+                                Log($"Executando script '{script.DisplayName}' em '{db.DatabaseName}'...");
 
-                                // Cria DataTable consolidado se ainda não existir
-                                if (!consolidatedResults.TryGetValue(resultIndex, out var consolidated))
+                                var dataSet = await _scriptExecutorService.ExecuteAsync(db, script, Log);
+
+                                for (int resultIndex = 0; resultIndex < dataSet.Tables.Count; resultIndex++)
                                 {
-                                    consolidated = dt.Clone();
-                                    consolidated.TableName = $"Result_{resultIndex + 1}";
-                                    consolidated.Columns.Add("ConnectionName", typeof(string));
-                                    consolidated.Columns.Add("DatabaseName", typeof(string));
+                                    var dt = dataSet.Tables[resultIndex];
 
-                                    consolidated.Columns["ConnectionName"].SetOrdinal(0);
-                                    consolidated.Columns["DatabaseName"].SetOrdinal(1);
+                                    // Cria ou obtém tabela consolidada
+                                    var consolidated = consolidatedResults.GetOrAdd(resultIndex, _ =>
+                                    {
+                                        var newDt = dt.Clone();
+                                        newDt.TableName = $"Result_{resultIndex + 1}";
+                                        newDt.Columns.Add("ConnectionName", typeof(string));
+                                        newDt.Columns.Add("DatabaseName", typeof(string));
+                                        newDt.Columns["ConnectionName"].SetOrdinal(0);
+                                        newDt.Columns["DatabaseName"].SetOrdinal(1);
+                                        return newDt;
+                                    });
 
-                                    consolidatedResults[resultIndex] = consolidated;
+                                    lock (consolidated)
+                                    {
+                                        foreach (DataRow row in dt.Rows)
+                                        {
+                                            var newRow = consolidated.NewRow();
+                                            foreach (DataColumn col in dt.Columns)
+                                                newRow[col.ColumnName] = row[col.ColumnName];
+
+                                            newRow["ConnectionName"] = db.ConnectionName;
+                                            newRow["DatabaseName"] = db.DatabaseName;
+                                            consolidated.Rows.Add(newRow);
+                                        }
+                                    }
                                 }
 
-                                // Adiciona linhas com info extra
-                                foreach (DataRow row in dt.Rows)
-                                {
-                                    var newRow = consolidatedResults[resultIndex].NewRow();
-
-                                    foreach (DataColumn col in dt.Columns)
-                                        newRow[col.ColumnName] = row[col.ColumnName];
-
-                                    newRow["ConnectionName"] = db.ConnectionName;
-                                    newRow["DatabaseName"] = db.DatabaseName;
-
-                                    consolidatedResults[resultIndex].Rows.Add(newRow);
-                                }
+                                Log($"Concluído '{script.DisplayName}' em '{db.DatabaseName}'.");
+                            }
+                            catch (Exception exScript)
+                            {
+                                Log($"Erro ao executar script '{script.DisplayName}' no banco '{db.DatabaseName}': {exScript.Message}", true);
                             }
                         }
-                            
                     }
-                    catch (Exception exDb)
+                    finally
                     {
-                        MessageBox.Show($"Erro ao executar script no banco '{db.DatabaseName}': {exDb.Message}",
-                            "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        semaphore.Release();
                     }
-                }
+                }).ToList();
 
-                if (consolidatedResults.Count == 0)
+                await Task.WhenAll(tasks);
+
+                if (consolidatedResults.IsEmpty)
                 {
                     MessageBox.Show("Nenhum resultado retornado.", "Informação", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                // Cria um grid para cada resultado consolidado
+                // Exibe os resultados
                 int idx = 1;
+                panelResults.Controls.Clear();
+
                 foreach (var kvp in consolidatedResults.OrderBy(k => k.Key))
                 {
                     var dt = kvp.Value;
@@ -1140,27 +1161,40 @@ namespace SQLMultiScript.UI.Forms
                     idx++;
                 }
 
+                Log("Execução concluída com sucesso.");
                 MessageBox.Show("Execução concluída com sucesso.", "Concluído", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
+                Log($"Erro geral: {ex.Message}", true);
                 MessageBox.Show($"Erro geral: {ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 btn.Enabled = true;
+                Cursor = Cursors.Default;
             }
         }
 
 
 
+
         private void Log(string message, bool isError = false)
         {
-            string prefix = isError ? "[ERRO]" : "[INFO]";
-            logBox.AppendText($"[{DateTime.Now:G}] {prefix} {message}" + Environment.NewLine);
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => Log(message, isError)));
+                return;
+            }
 
-            if (isError) _logger.LogError(message);
-            else _logger.LogInformation(message);
+            string prefix = isError ? "[ERRO]" : "[INFO]";
+            logBox.AppendText($"[{DateTime.Now:G}] {prefix} {message}{Environment.NewLine}");
+
+            if (isError)
+                _logger.LogError(message);
+            else
+                _logger.LogInformation(message);
         }
+
     }
 }

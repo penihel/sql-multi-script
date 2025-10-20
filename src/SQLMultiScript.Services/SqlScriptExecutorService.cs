@@ -10,22 +10,35 @@ namespace SQLMultiScript.Services
     public class ScriptExecutorService : IScriptExecutorService
     {
         private readonly IConnectionService _connectionService;
-        private readonly ILogger _logger;
+        
         private readonly int _commandTimeoutSeconds;
 
-        public ScriptExecutorService(ILogger logger, IConnectionService connectionService, int commandTimeoutSeconds = 600)
+        private ICollection<Connection> _connections;
+        public ScriptExecutorService(IConnectionService connectionService, int commandTimeoutSeconds = 600)
         {
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            
             _commandTimeoutSeconds = commandTimeoutSeconds;
             _connectionService = connectionService;
         }
 
-        public async Task<DataSet> ExecuteAsync(Database database, Script script)
+        public async Task LoadConnectionsAsync()
         {
 
+            _connections = await _connectionService.ListAsync();
+        }
+        public async Task<DataSet> ExecuteAsync(Database database, Script script, Action<string, bool> logAction)
+        {
+
+
+
+            var connectionObj = _connections.FirstOrDefault(c => c.Name == database.ConnectionName);
+
+            if (connectionObj == null)
+                throw new Exception("connection notfound");
+
             string content = script.Content ?? await File.ReadAllTextAsync(script.FilePath);
-            
-            string connectionString = _connectionService.BuildConnectionString(database.Connection);
+
+            string connectionString = _connectionService.BuildConnectionString(connectionObj);
 
             if (string.IsNullOrWhiteSpace(connectionString))
                 throw new ArgumentException("connectionString não pode ser vazio.", nameof(connectionString));
@@ -36,7 +49,7 @@ namespace SQLMultiScript.Services
             var resultDataSet = new DataSet();
             var batches = SplitBatches(content).ToList();
 
-            _logger.LogInformation("Executando script em {Conn}. Batches: {Count}", HiddenConnectionInfo(connectionString), batches.Count);
+            logAction(string.Format("Executando script em {0}. Batches: {1}", HiddenConnectionInfo(connectionString), batches.Count), false);
 
             await using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync();
@@ -51,7 +64,7 @@ namespace SQLMultiScript.Services
                     if (string.IsNullOrWhiteSpace(batch))
                         continue;
 
-                    _logger.LogInformation("Executando batch {Index}/{Total} (tamanho: {Length} chars)", i + 1, batches.Count, batch.Length);
+                    logAction(string.Format("Executando batch {0}/{1} (tamanho: {2} chars)", i + 1, batches.Count, batch.Length), false);
 
                     await using var cmd = connection.CreateCommand();
                     cmd.Transaction = transaction;
@@ -69,19 +82,19 @@ namespace SQLMultiScript.Services
                 }
 
                 transaction.Commit();
-                _logger.LogInformation("Script executado com sucesso em {Conn}. {Tables} resultados obtidos.",
-                    HiddenConnectionInfo(connectionString), resultDataSet.Tables.Count);
+                logAction( string.Format("Script executado com sucesso em {0}. {1} resultados obtidos.",
+                    HiddenConnectionInfo(connectionString), resultDataSet.Tables.Count), false);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao executar script em {Conn}. Fazendo rollback.", HiddenConnectionInfo(connectionString));
+                logAction(string.Format("Erro ao executar script em {0}. Fazendo rollback." + Environment.NewLine + "{1}", HiddenConnectionInfo(connectionString), ex.Message), true);
                 try
                 {
                     transaction.Rollback();
                 }
                 catch (Exception rbEx)
                 {
-                    _logger.LogWarning(rbEx, "Rollback falhou.");
+                    logAction(rbEx.Message, true);
                 }
                 throw;
             }
