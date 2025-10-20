@@ -195,4 +195,7 @@
   <data name="Connection" xml:space="preserve">
     <value>Connection</value>
   </data>
+  <data name="Execute" xml:space="preserve">
+    <value>Execute</value>
+  </data>
 </root>

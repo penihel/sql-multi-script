@@ -160,6 +160,15 @@ namespace SQLMultiScript.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Execute.
+        /// </summary>
+        public static string Execute {
+            get {
+                return ResourceManager.GetString("Execute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The field cannot be empty.
         /// </summary>
         public static string FieldCannotBeEmpty {

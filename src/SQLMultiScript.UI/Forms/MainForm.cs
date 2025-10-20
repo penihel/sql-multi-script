@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ScintillaNET;
 using SQLMultiScript.Core;
@@ -7,6 +8,7 @@ using SQLMultiScript.Core.Models;
 using SQLMultiScript.Resources;
 using SQLMultiScript.UI.ControlFactories;
 using System.ComponentModel;
+using System.Data;
 
 namespace SQLMultiScript.UI.Forms
 {
@@ -16,6 +18,7 @@ namespace SQLMultiScript.UI.Forms
 
         private readonly IProjectService _projectService;
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
+        private readonly IScriptExecutorService _scriptExecutorService;
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
 
@@ -35,7 +38,11 @@ namespace SQLMultiScript.UI.Forms
         private TextBox logBox;
         private MenuStrip menuStrip;
 
-
+        private Panel panelResults = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Beige
+        };
 
         private ComboBox comboBoxDatabaseDistributionList;
 
@@ -75,15 +82,15 @@ namespace SQLMultiScript.UI.Forms
             ILogger logger,
             IProjectService projectService,
             IDatabaseDistributionListService databaseDistributionListService,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IScriptExecutorService scriptExecutorService)
         {
             _logger = logger;
             _projectService = projectService;
             _databaseDistributionListService = databaseDistributionListService;
             _serviceProvider = serviceProvider;
             InitializeLayout();
-
-
+            _scriptExecutorService = scriptExecutorService;
         }
 
         private void InitializeLayout()
@@ -94,6 +101,20 @@ namespace SQLMultiScript.UI.Forms
             WindowState = FormWindowState.Maximized;
             Load += MainForm_Load;
 
+            var mainTableLayoutPanel = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                ColumnCount = 1,
+                RowCount = 2
+            };
+            mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, TopHeight));
+            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+
+
             // Split principal (top/bottom)
             var splitMain = new SplitContainer
             {
@@ -101,7 +122,15 @@ namespace SQLMultiScript.UI.Forms
                 Orientation = Orientation.Horizontal,
                 SplitterDistance = 800
             };
-            Controls.Add(splitMain);
+
+
+            var mainTopButtonsPanel = PanelFactory.Create();
+
+            SetupTopButtonsPanel(mainTopButtonsPanel);
+
+            mainTableLayoutPanel.Controls.Add(mainTopButtonsPanel, 0, 0);
+            mainTableLayoutPanel.Controls.Add(splitMain, 0, 1);
+            Controls.Add(mainTableLayoutPanel);
 
             // Split esquerda
             var splitLeft = new SplitContainer
@@ -140,19 +169,36 @@ namespace SQLMultiScript.UI.Forms
             splitMain.Panel2.Controls.Add(splitResultFooter);
 
 
-            var resultPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.Beige
-            };
 
-            resultPanel.Controls.Add(new Label { Text = "Painel de Resultados", Dock = DockStyle.Top });
-            splitResultFooter.Panel1.Controls.Add(resultPanel);
+
+            //resultPanel.Controls.Add(new Label { Text = "Painel de Resultados", Dock = DockStyle.Top });
+            splitResultFooter.Panel1.Controls.Add(panelResults);
 
             logBox = new TextBox { Dock = DockStyle.Fill, Multiline = true, ScrollBars = ScrollBars.Vertical };
             splitResultFooter.Panel2.Controls.Add(logBox);
 
             InitializeMenu();
+        }
+
+        private void SetupTopButtonsPanel(Panel parentPanel)
+        {
+
+
+
+            var btnRun = ButtonFactory.Create(ToolTip,
+                Strings.Execute,
+                Images.ic_fluent_play_multiple_16_regular,
+                BtnRun_Click)
+                .Customize(b => b.AutoSize = true)
+                .Customize(b => b.Padding = new Padding(20, 5, 20, 5))
+                .Customize(b => b.TextImageRelation = TextImageRelation.ImageBeforeText)
+                .Customize(b => b.Text = Strings.Execute)
+                .Customize(b => b.Anchor = AnchorStyles.Top);
+
+
+
+            parentPanel.Controls.Add(btnRun);
+
         }
 
         private void SetupDatabaseDistributionListPanel(Panel parentPanel)
@@ -960,6 +1006,152 @@ namespace SQLMultiScript.UI.Forms
 
 
         }
+
+
+        private async void BtnRun_Click(object sender, EventArgs e)
+        {
+            var btn = (Button)sender;
+            btn.Enabled = false;
+            Cursor = Cursors.WaitCursor;
+
+            try
+            {
+                if (_currentProject == null)
+                {
+                    Log("Nenhum projeto carregado.", true);
+                    return;
+                }
+
+                if (SelectedDistributionList == null)
+                {
+                    Log("Nenhuma lista de distribuição selecionada.", true);
+                    return;
+                }
+
+                var selectedDatabases = SelectedDistributionList.Databases
+                    .Where(d => d.Selected)
+                    .ToList();
+
+                if (selectedDatabases.Count == 0)
+                {
+                    Log("Nenhum banco de dados selecionado para execução.", true);
+                    return;
+                }
+
+                var selectedScripts = _currentProject.Scripts
+                    .Where(s => s.Selected)
+                    .ToList();
+
+                if (selectedScripts.Count == 0)
+                {
+                    Log("Nenhum script selecionado para execução.", true);
+                    return;
+                }
+
+               
+
+                // Dicionário: índice do resultado → DataTable consolidado
+                var consolidatedResults = new Dictionary<int, DataTable>();
+
+                foreach (var db in selectedDatabases)
+                {
+                    try
+                    {
+                        foreach (var script in selectedScripts)
+                        {
+                            var dataSet = await _scriptExecutorService.ExecuteAsync(db, script);
+
+                            for (int resultIndex = 0; resultIndex < dataSet.Tables.Count; resultIndex++)
+                            {
+                                var dt = dataSet.Tables[resultIndex];
+
+                                // Cria DataTable consolidado se ainda não existir
+                                if (!consolidatedResults.TryGetValue(resultIndex, out var consolidated))
+                                {
+                                    consolidated = dt.Clone();
+                                    consolidated.TableName = $"Result_{resultIndex + 1}";
+                                    consolidated.Columns.Add("ConnectionName", typeof(string));
+                                    consolidated.Columns.Add("DatabaseName", typeof(string));
+
+                                    consolidated.Columns["ConnectionName"].SetOrdinal(0);
+                                    consolidated.Columns["DatabaseName"].SetOrdinal(1);
+
+                                    consolidatedResults[resultIndex] = consolidated;
+                                }
+
+                                // Adiciona linhas com info extra
+                                foreach (DataRow row in dt.Rows)
+                                {
+                                    var newRow = consolidatedResults[resultIndex].NewRow();
+
+                                    foreach (DataColumn col in dt.Columns)
+                                        newRow[col.ColumnName] = row[col.ColumnName];
+
+                                    newRow["ConnectionName"] = db.ConnectionName;
+                                    newRow["DatabaseName"] = db.DatabaseName;
+
+                                    consolidatedResults[resultIndex].Rows.Add(newRow);
+                                }
+                            }
+                        }
+                            
+                    }
+                    catch (Exception exDb)
+                    {
+                        MessageBox.Show($"Erro ao executar script no banco '{db.DatabaseName}': {exDb.Message}",
+                            "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+
+                if (consolidatedResults.Count == 0)
+                {
+                    MessageBox.Show("Nenhum resultado retornado.", "Informação", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // Cria um grid para cada resultado consolidado
+                int idx = 1;
+                foreach (var kvp in consolidatedResults.OrderBy(k => k.Key))
+                {
+                    var dt = kvp.Value;
+
+                    var label = new Label
+                    {
+                        Text = $"Resultado #{idx} — {dt.Rows.Count} linhas",
+                        AutoSize = true,
+                        Font = new Font(Font, FontStyle.Bold),
+                        Padding = new Padding(0, 10, 0, 2)
+                    };
+
+                    var grid = new DataGridView
+                    {
+                        DataSource = dt,
+                        ReadOnly = true,
+                        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells,
+                        AllowUserToAddRows = false,
+                        AllowUserToDeleteRows = false,
+                        Width = panelResults.ClientSize.Width - 40,
+                        Height = Math.Min(400, 40 + dt.Rows.Count * 22),
+                        Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
+                    };
+
+                    panelResults.Controls.Add(label);
+                    panelResults.Controls.Add(grid);
+                    idx++;
+                }
+
+                MessageBox.Show("Execução concluída com sucesso.", "Concluído", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erro geral: {ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btn.Enabled = true;
+            }
+        }
+
 
 
         private void Log(string message, bool isError = false)

@@ -77,6 +77,7 @@ namespace SQLMultiScript.Services
                     {
                         DatabaseName = reader.GetString(0),
                         ConnectionName = connection.Name,
+                        Connection = connection,
                         Selected = true
                         
                     };
@@ -147,7 +148,7 @@ namespace SQLMultiScript.Services
 
         }
 
-        private string BuildConnectionString(Connection connection)
+        public string BuildConnectionString(Connection connection)
         {
             string server = connection.Server.Trim();
 
