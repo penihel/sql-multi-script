@@ -7,8 +7,8 @@ namespace SQLMultiScript.UI.Forms
 {
     public class NewConnectionForm : Form
     {
-        private Label lblDisplayName, lblServer, lblAuthentication, lblUsername, lblPassword;
-        private TextBox txtDisplayName, txtServer, txtUsername, txtPassword;
+        private Label lblName, lblServer, lblAuthentication, lblUsername, lblPassword;
+        private TextBox txtName, txtServer, txtUsername, txtPassword;
         private ComboBox cmbAuthentication;
         private Button btnTest, btnSave, btnCancel;
 
@@ -33,7 +33,7 @@ namespace SQLMultiScript.UI.Forms
         private void InitializeBindings()
         {
             // Faz o binding dos campos com as propriedades do modelo
-            txtDisplayName.DataBindings.Add(nameof(txtDisplayName.Text), _bindingSource, nameof(Connection.Name), false, DataSourceUpdateMode.OnPropertyChanged);
+            txtName.DataBindings.Add(nameof(txtName.Text), _bindingSource, nameof(Connection.Name), false, DataSourceUpdateMode.OnPropertyChanged);
             txtServer.DataBindings.Add(nameof(txtServer.Text), _bindingSource, nameof(Connection.Server), false, DataSourceUpdateMode.OnPropertyChanged);
             cmbAuthentication.DataBindings.Add(nameof(cmbAuthentication.SelectedItem), _bindingSource, nameof(Connection.Auth), false, DataSourceUpdateMode.OnPropertyChanged);
             txtUsername.DataBindings.Add(nameof(txtUsername.Text), _bindingSource, nameof(Connection.UserName), false, DataSourceUpdateMode.OnPropertyChanged);
@@ -75,8 +75,8 @@ namespace SQLMultiScript.UI.Forms
 
 
             // Labels e campos
-            lblDisplayName = new Label { Text = "Nome:", AutoSize = true, Anchor = AnchorStyles.Left };
-            txtDisplayName = new TextBox { Dock = DockStyle.Fill };
+            lblName = new Label { Text = "Nome:", AutoSize = true, Anchor = AnchorStyles.Left };
+            txtName = new TextBox { Dock = DockStyle.Fill };
 
 
             lblServer = new Label { Text = "Servidor:", AutoSize = true, Anchor = AnchorStyles.Left };
@@ -102,8 +102,8 @@ namespace SQLMultiScript.UI.Forms
             txtPassword = new TextBox { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
 
 
-            layout.Controls.Add(lblDisplayName, 0, 0);
-            layout.Controls.Add(txtDisplayName, 1, 0);
+            layout.Controls.Add(lblName, 0, 0);
+            layout.Controls.Add(txtName, 1, 0);
 
             layout.Controls.Add(lblServer, 0, 1);
             layout.Controls.Add(txtServer, 1, 1);

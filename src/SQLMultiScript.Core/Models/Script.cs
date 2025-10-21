@@ -6,7 +6,7 @@ namespace SQLMultiScript.Core.Models
     {
         public string FilePath { get; set; }
 
-        public string DisplayName { get; set; }
+        public string Name { get; set; }
         
         [JsonIgnore] 
         public string Content { get; set; }
@@ -17,7 +17,7 @@ namespace SQLMultiScript.Core.Models
 
         public override string ToString()   
         {
-            return DisplayName;
+            return Name;
         }
         
     }

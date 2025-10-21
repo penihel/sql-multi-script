@@ -1,5 +1,4 @@
 ﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using System.Data;
@@ -38,7 +37,7 @@ namespace SQLMultiScript.Services
 
             string content = script.Content ?? await File.ReadAllTextAsync(script.FilePath);
 
-            string connectionString = _connectionService.BuildConnectionString(connectionObj);
+            string connectionString = _connectionService.BuildConnectionString(connectionObj, database.DatabaseName);
 
             if (string.IsNullOrWhiteSpace(connectionString))
                 throw new ArgumentException("connectionString não pode ser vazio.", nameof(connectionString));

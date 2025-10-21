@@ -78,7 +78,7 @@ namespace SQLMultiScript.Services
                         DatabaseName = reader.GetString(0),
                         ConnectionName = connection.Name,
                         Selected = true
-                        
+
                     };
                     databases.Add(db);
                 }
@@ -115,7 +115,7 @@ namespace SQLMultiScript.Services
 
                 var fileName = _pathService.GetNewValidJsonFileName(_pathService.GetConnectionsPath(), connection.Name);
 
-                
+
 
                 connection.FilePath = fileName;
             }
@@ -147,7 +147,7 @@ namespace SQLMultiScript.Services
 
         }
 
-        public string BuildConnectionString(Connection connection)
+        public string BuildConnectionString(Connection connection, string databaseName = null)
         {
             string server = connection.Server.Trim();
 
@@ -160,7 +160,7 @@ namespace SQLMultiScript.Services
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
             {
                 DataSource = server,
-                InitialCatalog = "master",
+                InitialCatalog = databaseName ?? "master",
                 //ConnectTimeout = 5
             };
 

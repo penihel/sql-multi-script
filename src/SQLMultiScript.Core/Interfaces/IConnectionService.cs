@@ -10,7 +10,7 @@ namespace SQLMultiScript.Core.Interfaces
 
         Task TestAsync(Connection connection);
 
-        string BuildConnectionString(Connection connection);
+        string BuildConnectionString(Connection connection, string databaseName = null);
     }
 }
     

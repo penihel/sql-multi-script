@@ -22,7 +22,7 @@ namespace SQLMultiScript.Services
                 {
                     new Script()
                     {
-                        DisplayName = "Script1.sql",
+                        Name = "Script1.sql",
                         Selected = true
                         
                     }

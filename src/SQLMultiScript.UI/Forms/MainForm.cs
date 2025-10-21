@@ -1,12 +1,10 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ScintillaNET;
 using SQLMultiScript.Core;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using SQLMultiScript.Resources;
-using SQLMultiScript.Services;
 using SQLMultiScript.UI.ControlFactories;
 using System.Collections.Concurrent;
 using System.ComponentModel;
@@ -28,23 +26,23 @@ namespace SQLMultiScript.UI.Forms
         private Script _activeScript = null;
 
 
-        private BindingList<DatabaseDistributionList> _databaseDistributionLists;
+        private BindingList<DatabaseDistributionList> _databaseDistributionLists = new BindingList<DatabaseDistributionList>();
+        private BindingList<Execution> _executions = new BindingList<Execution>();
 
 
 
         private DataGridView
             dataGridViewScripts,
-            dataGridViewDatabases;
+            dataGridViewDatabases,
+            dataGridViewDatabasesResults;
+
+        private TreeView treeViewExecutions;
 
         private Scintilla sqlEditor;
         private TextBox logBox;
         private MenuStrip menuStrip;
 
-        private Panel panelResults = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = Color.Beige
-        };
+        private Panel panelResults;
 
         private ComboBox comboBoxDatabaseDistributionList;
 
@@ -91,8 +89,9 @@ namespace SQLMultiScript.UI.Forms
             _projectService = projectService;
             _databaseDistributionListService = databaseDistributionListService;
             _serviceProvider = serviceProvider;
-            InitializeLayout();
             _scriptExecutorService = scriptExecutorService;
+
+            InitializeLayout();
         }
 
         private void InitializeLayout()
@@ -122,7 +121,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 800
+                //SplitterDistance = 200
             };
 
 
@@ -172,14 +171,110 @@ namespace SQLMultiScript.UI.Forms
 
 
 
+            SetupResultPanel(splitResultFooter.Panel1);
 
-            //resultPanel.Controls.Add(new Label { Text = "Painel de Resultados", Dock = DockStyle.Top });
-            splitResultFooter.Panel1.Controls.Add(panelResults);
+
 
             logBox = new TextBox { Dock = DockStyle.Fill, Multiline = true, ScrollBars = ScrollBars.Vertical };
             splitResultFooter.Panel2.Controls.Add(logBox);
 
             InitializeMenu();
+        }
+
+        private void SetupResultPanel(Panel panel)
+        {
+
+            // Split esquerda
+            var splitLeft = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical,
+                SplitterDistance = 10
+            };
+            panel.Controls.Add(splitLeft);
+
+            treeViewExecutions = new TreeView
+            {
+                Dock = DockStyle.Fill,
+                //BorderStyle = BorderStyle.FixedSingle,
+                // Add space at the top to avoid touching the label
+                //Margin = new Padding(0, 4, 0, 0),
+                //CheckBoxes = true
+            };
+
+            var treeContainer = PanelFactory.Create();
+            panelResults = PanelFactory.Create();
+
+            treeContainer.Controls.Add(treeViewExecutions);
+
+            splitLeft.Panel1.Controls.Add(treeContainer);
+
+            var splitDatabasesAndResults = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical,
+                SplitterDistance = 10
+            };
+
+            splitLeft.Panel2.Controls.Add(splitDatabasesAndResults);
+
+
+            // -----------------------
+            // DataGridView
+            // -----------------------
+            dataGridViewDatabasesResults = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                AutoGenerateColumns = false,
+                RowHeadersVisible = false,
+                ColumnHeadersVisible = true,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AllowDrop = false,
+                AllowUserToOrderColumns = false,
+                AllowUserToResizeColumns = false,
+                AllowUserToResizeRows = false,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                BackgroundColor = Color.White,
+                BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D,
+            };
+
+            // Checkbox
+            var colSelected = new DataGridViewCheckBoxColumn
+            {
+                DataPropertyName = "Selected",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+            };
+            dataGridViewDatabasesResults.Columns.Add(colSelected);
+
+            // Database name column
+            var colName = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "DatabaseName",
+                HeaderText = Strings.DatabasesToExecute,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                ReadOnly = true
+            };
+            dataGridViewDatabasesResults.Columns.Add(colName);
+
+
+            // Database name column
+            var colServer = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "ConnectionName",
+                HeaderText = Strings.Connection,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                ReadOnly = true
+            };
+            dataGridViewDatabasesResults.Columns.Add(colServer);
+
+
+            var gridContainer = PanelFactory.Create();
+
+            gridContainer.Controls.Add(dataGridViewDatabasesResults);
+
+            splitDatabasesAndResults.Panel1.Controls.Add(gridContainer);
+            splitDatabasesAndResults.Panel2.Controls.Add(panelResults);
         }
 
         private void SetupTopButtonsPanel(Panel parentPanel)
@@ -221,7 +316,8 @@ namespace SQLMultiScript.UI.Forms
                 AllowUserToResizeColumns = false,
                 AllowUserToResizeRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-
+                BackgroundColor = Color.White,
+                BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D,
             };
 
             // Checkbox
@@ -335,6 +431,8 @@ namespace SQLMultiScript.UI.Forms
                 AllowUserToResizeColumns = false,
                 AllowUserToResizeRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                BackgroundColor = Color.White,
+                BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D
 
             };
 
@@ -349,7 +447,7 @@ namespace SQLMultiScript.UI.Forms
             // Nome do Script
             var colName = new DataGridViewTextBoxColumn
             {
-                DataPropertyName = "DisplayName",
+                DataPropertyName = "Name",
                 HeaderText = "Script",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 ReadOnly = true
@@ -673,7 +771,7 @@ namespace SQLMultiScript.UI.Forms
 
             }
 
-            Log($"Script ativo: {_activeScript.DisplayName}");
+            Log($"Script ativo: {_activeScript.Name}");
         }
         private bool SaveScript(Script script)
         {
@@ -687,13 +785,13 @@ namespace SQLMultiScript.UI.Forms
                 using var sfd = new SaveFileDialog
                 {
                     Filter = "SQL Files (*.sql)|*.sql|All Files (*.*)|*.*",
-                    FileName = script.DisplayName
+                    FileName = script.Name
                 };
 
                 if (sfd.ShowDialog() != DialogResult.OK) return false;
 
                 script.FilePath = sfd.FileName;
-                script.DisplayName = Path.GetFileName(sfd.FileName);
+                script.Name = Path.GetFileName(sfd.FileName);
 
 
             }
@@ -803,7 +901,7 @@ namespace SQLMultiScript.UI.Forms
                 _currentProject.Scripts.Add(new Script
                 {
                     FilePath = file,
-                    DisplayName = Path.GetFileName(file),
+                    Name = Path.GetFileName(file),
                     Selected = true
                 });
                 Log($"Script adicionado: {file}");
@@ -830,7 +928,7 @@ namespace SQLMultiScript.UI.Forms
 
             _currentProject.Scripts.Add(new Script
             {
-                DisplayName = $"Script{_currentProject.Scripts.Count + 1}.sql",
+                Name = $"Script{_currentProject.Scripts.Count + 1}.sql",
                 Selected = true
             });
         }
@@ -883,7 +981,7 @@ namespace SQLMultiScript.UI.Forms
             }
 
             // Aqui executa o script (simulado)
-            Log($"Executando script: {_activeScript.DisplayName}");
+            Log($"Executando script: {_activeScript.Name}");
             Log(script);
             Log("Execução concluída com sucesso");
         }
@@ -1050,7 +1148,12 @@ namespace SQLMultiScript.UI.Forms
                     return;
                 }
 
+
+
+
                 Log($"Iniciando execução em {selectedDatabases.Count} banco(s) com {selectedScripts.Count} script(s)...");
+
+                await _scriptExecutorService.LoadConnectionsAsync();
 
                 // Dicionário: índice do resultado → DataTable consolidado
                 var consolidatedResults = new ConcurrentDictionary<int, DataTable>();
@@ -1059,7 +1162,10 @@ namespace SQLMultiScript.UI.Forms
                 using var semaphore = new SemaphoreSlim(1);
 
 
-                await _scriptExecutorService.LoadConnectionsAsync();
+                CreateExecution(selectedScripts, selectedDatabases);
+
+                UpdateTreeView();
+
 
                 // Cria uma lista de tasks para todos os bancos
                 var tasks = selectedDatabases.Select(async db =>
@@ -1071,7 +1177,7 @@ namespace SQLMultiScript.UI.Forms
                         {
                             try
                             {
-                                Log($"Executando script '{script.DisplayName}' em '{db.DatabaseName}'...");
+                                Log($"Executando script '{script.Name}' em '{db.DatabaseName}'...");
 
                                 var dataSet = await _scriptExecutorService.ExecuteAsync(db, script, Log);
 
@@ -1106,11 +1212,11 @@ namespace SQLMultiScript.UI.Forms
                                     }
                                 }
 
-                                Log($"Concluído '{script.DisplayName}' em '{db.DatabaseName}'.");
+                                Log($"Concluído '{script.Name}' em '{db.DatabaseName}'.");
                             }
                             catch (Exception exScript)
                             {
-                                Log($"Erro ao executar script '{script.DisplayName}' no banco '{db.DatabaseName}': {exScript.Message}", true);
+                                Log($"Erro ao executar script '{script.Name}' no banco '{db.DatabaseName}': {exScript.Message}", true);
                             }
                         }
                     }
@@ -1176,8 +1282,71 @@ namespace SQLMultiScript.UI.Forms
             }
         }
 
+        private void UpdateTreeView()
+        {
+            treeViewExecutions.BeginUpdate();
+            treeViewExecutions.Nodes.Clear();
+
+            foreach (var e in _executions)
+            {
+                var node = new TreeNode(e.Name)
+                {
+                    Tag = e, // Store the full object
+                    // Do not check the root node
+                    //ImageKey = "disconnected",
+                    //SelectedImageKey = "disconnected"
+                };
+                treeViewExecutions.Nodes.Add(node);
 
 
+                foreach (var s in e.ScriptsInfo)
+                {
+                    var nodeScript = new TreeNode(s.Script.Name)
+                    {
+                        Tag = s, // Store the full object
+                                 // Do not check the root node
+                                 //ImageKey = "disconnected",
+                                 //SelectedImageKey = "disconnected"
+                    };
+
+                    node.Nodes.Add(nodeScript);
+
+                    foreach (var d in s.DatabasesInfo)
+                    {
+                        var nodeDatabase = new TreeNode(d.Database.DatabaseName)
+                        {
+                            Tag = d, // Store the full object
+                                     // Do not check the root node
+                                     //ImageKey = "disconnected",
+                                     //SelectedImageKey = "disconnected"
+                        };
+
+                        nodeScript.Nodes.Add(nodeDatabase);
+                    }
+                }
+            }
+
+            treeViewExecutions.EndUpdate();
+        }
+
+        private void CreateExecution(List<Script> selectedScripts, List<Database> selectedDatabases)
+        {
+            _executions.Add(new Execution()
+            {
+                Name = $"Execution in {DateTime.Now}",
+                Status = ExecutionStatus.Queued,
+                ScriptsInfo = new BindingList<ExecutionScriptInfo>(selectedScripts.Select(s => new ExecutionScriptInfo
+                {
+                    Script = s,
+                    Status = ExecutionStatus.Queued,
+                    DatabasesInfo = new BindingList<ExecutionDatabaseInfo>(selectedDatabases.Select(d => new ExecutionDatabaseInfo
+                    {
+                        Database = d,
+                        Status = ExecutionStatus.Queued,
+                    }).ToList())
+                }).ToList())
+            });
+        }
 
         private void Log(string message, bool isError = false)
         {
