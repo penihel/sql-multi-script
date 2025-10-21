@@ -174,9 +174,10 @@ namespace SQLMultiScript.UI.Forms
             SetupResultPanel(splitResultFooter.Panel1);
 
 
-
+            var logContainer = PanelFactory.Create();
             logBox = new TextBox { Dock = DockStyle.Fill, Multiline = true, ScrollBars = ScrollBars.Vertical };
-            splitResultFooter.Panel2.Controls.Add(logBox);
+            logContainer.Controls.Add(logBox);
+            splitResultFooter.Panel2.Controls.Add(logContainer);
 
             InitializeMenu();
         }
