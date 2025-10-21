@@ -25,9 +25,9 @@ namespace SQLMultiScript.Services
 
             _connections = await _connectionService.ListAsync();
         }
-        public async Task<DataSet> ExecuteAsync(Database database, Script script, Action<string, bool> logAction)
+        public async Task<ScriptExecutorResponse> ExecuteAsync(Database database, Script script, Action<string, bool> logAction)
         {
-
+            var scriptExecutorResponse = new ScriptExecutorResponse();
 
 
             var connectionObj = _connections.FirstOrDefault(c => c.Name == database.ConnectionName);
@@ -51,6 +51,14 @@ namespace SQLMultiScript.Services
             logAction(string.Format("Executando script em {0}. Batches: {1}", HiddenConnectionInfo(connectionString), batches.Count), false);
 
             await using var connection = new SqlConnection(connectionString);
+
+            connection.InfoMessage += (s, e) =>
+            {
+                
+                scriptExecutorResponse.Messages.Add(e.Message);
+
+            };
+
             await connection.OpenAsync();
 
             using var transaction = connection.BeginTransaction();
@@ -66,8 +74,15 @@ namespace SQLMultiScript.Services
                     logAction(string.Format("Executando batch {0}/{1} (tamanho: {2} chars)", i + 1, batches.Count, batch.Length), false);
 
                     await using var cmd = connection.CreateCommand();
+                    cmd.UpdatedRowSource = UpdateRowSource.None;
                     cmd.Transaction = transaction;
                     cmd.CommandText = batch;
+                    cmd.StatementCompleted += (s, e) =>
+                    {
+                        // Captura mensagens do tipo "(X rows affected)"
+                        if (e.RecordCount >= 0)
+                            scriptExecutorResponse.Messages.Add($"{e.RecordCount} linha(s) afetada(s)");
+                    };
                     cmd.CommandTimeout = _commandTimeoutSeconds;
 
                     using var reader = await cmd.ExecuteReaderAsync();
@@ -98,7 +113,8 @@ namespace SQLMultiScript.Services
                 throw;
             }
 
-            return resultDataSet;
+            scriptExecutorResponse.DataSet = resultDataSet;
+            return scriptExecutorResponse;
         }
 
         private static IEnumerable<string> SplitBatches(string script)

@@ -6,7 +6,7 @@ namespace SQLMultiScript.Core.Interfaces
     public interface IScriptExecutorService
     {
         Task LoadConnectionsAsync();
-        Task<DataSet> ExecuteAsync(Database database, Script script, Action<string, bool> logAction);
+        Task<ScriptExecutorResponse> ExecuteAsync(Database database, Script script, Action<string, bool> logAction);
         
     }
 

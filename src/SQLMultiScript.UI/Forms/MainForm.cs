@@ -9,6 +9,7 @@ using SQLMultiScript.UI.ControlFactories;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Data;
+using System.Text;
 
 namespace SQLMultiScript.UI.Forms
 {
@@ -1159,6 +1160,9 @@ namespace SQLMultiScript.UI.Forms
                 // Dicionário: índice do resultado → DataTable consolidado
                 var consolidatedResults = new ConcurrentDictionary<int, DataTable>();
 
+                // Dicionário: script → lista de mensagens (agrupadas por banco)
+                var scriptMessages = new ConcurrentDictionary<string, List<string>>();
+
                 // Semaphore para limitar o número de execuções simultâneas
                 using var semaphore = new SemaphoreSlim(1);
 
@@ -1180,7 +1184,27 @@ namespace SQLMultiScript.UI.Forms
                             {
                                 Log($"Executando script '{script.Name}' em '{db.DatabaseName}'...");
 
-                                var dataSet = await _scriptExecutorService.ExecuteAsync(db, script, Log);
+                                var scriptExecutorResponse = await _scriptExecutorService.ExecuteAsync(db, script, Log);
+
+                                // ✅ Armazena mensagens (sempre, mesmo que não haja DataSet)
+                                if (scriptExecutorResponse.Messages.Count > 0)
+                                {
+                                    var formatted = new StringBuilder();
+                                    formatted.AppendLine($"🔹 Banco: {db.DatabaseName}");
+                                    foreach (var msg in scriptExecutorResponse.Messages)
+                                        formatted.AppendLine(msg);
+
+                                    scriptMessages.AddOrUpdate(
+                                        script.Name,
+                                        _ => new List<string> { formatted.ToString() },
+                                        (_, list) =>
+                                        {
+                                            lock (list) list.Add(formatted.ToString());
+                                            return list;
+                                        });
+                                }
+
+                                var dataSet = scriptExecutorResponse.DataSet;
 
                                 for (int resultIndex = 0; resultIndex < dataSet.Tables.Count; resultIndex++)
                                 {
@@ -1266,6 +1290,33 @@ namespace SQLMultiScript.UI.Forms
                     panelResults.Controls.Add(label);
                     panelResults.Controls.Add(grid);
                     idx++;
+                }
+
+                // 2️⃣ Mostra mensagens por script
+                foreach (var kvp in scriptMessages)
+                {
+                    var label = new Label
+                    {
+                        Text = $"Mensagens do script: {kvp.Key}",
+                        AutoSize = true,
+                        Font = new Font(Font, FontStyle.Bold),
+                        Padding = new Padding(0, 10, 0, 2)
+                    };
+
+                    var textBox = new TextBox
+                    {
+                        Multiline = true,
+                        ReadOnly = true,
+                        ScrollBars = ScrollBars.Vertical,
+                        Width = panelResults.ClientSize.Width - 40,
+                        Height = 150,
+                        Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top,
+                        Font = new Font("Consolas", 9),
+                        Text = string.Join(Environment.NewLine + Environment.NewLine, kvp.Value)
+                    };
+
+                    panelResults.Controls.Add(label);
+                    panelResults.Controls.Add(textBox);
                 }
 
                 Log("Execução concluída com sucesso.");
