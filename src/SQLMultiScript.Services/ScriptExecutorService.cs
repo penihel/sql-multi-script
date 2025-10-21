@@ -51,13 +51,15 @@ namespace SQLMultiScript.Services
             logAction(string.Format("Executando script em {0}. Batches: {1}", HiddenConnectionInfo(connectionString), batches.Count), false);
 
             await using var connection = new SqlConnection(connectionString);
-
+            //connection.FireInfoMessageEventOnUserErrors = true;
             connection.InfoMessage += (s, e) =>
             {
                 
                 scriptExecutorResponse.Messages.Add(e.Message);
 
             };
+
+            
 
             await connection.OpenAsync();
 
