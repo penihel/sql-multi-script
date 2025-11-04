@@ -8,6 +8,7 @@ using SQLMultiScript.Resources;
 using SQLMultiScript.UI.ControlFactories;
 using System.ComponentModel;
 using System.Data;
+using System.Windows.Forms;
 
 namespace SQLMultiScript.UI.Forms
 {
@@ -44,6 +45,10 @@ namespace SQLMultiScript.UI.Forms
         private Panel panelResults;
 
         private ComboBox comboBoxDatabaseDistributionList;
+
+        //ImageList de Status
+        private ImageList imageListResults = new ImageList();
+
 
         //Properties
         private DatabaseDistributionList _selectedDistributionList;
@@ -115,6 +120,13 @@ namespace SQLMultiScript.UI.Forms
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
 
+            //ImageList Results
+            imageListResults.ImageSize = new Size(16, 16);
+
+            imageListResults.Images.Add("Queued", Images.circle_gray);
+            imageListResults.Images.Add("Executing", Images.circle_blue);
+            imageListResults.Images.Add("Error", Images.circle_red);
+            imageListResults.Images.Add("Success", Images.circle_green);
 
             // Split principal (top/bottom)
             var splitMain = new SplitContainer
@@ -208,6 +220,12 @@ namespace SQLMultiScript.UI.Forms
                 Dock = DockStyle.Fill
             };
 
+
+
+
+
+            treeViewExecutions.ImageList = imageListResults;
+
             treeViewExecutions.AfterSelect += treeViewExecutions_AfterSelect;
 
             var treeContainer = PanelFactory.Create();
@@ -256,14 +274,23 @@ namespace SQLMultiScript.UI.Forms
             dataGridViewDatabasesResults.Columns.Add(colSelected);
 
             // Database name column
-            var colStatus = new DataGridViewTextBoxColumn
+            var colStatus = new DataGridViewImageColumn
             {
-                DataPropertyName = "Status",
-                HeaderText = Strings.Status,
+                Name = "colStatus",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                ReadOnly = true
+                ReadOnly = true,
+                HeaderText = string.Empty
             };
             dataGridViewDatabasesResults.Columns.Add(colStatus);
+
+            dataGridViewDatabasesResults.CellFormatting += (s, e) =>
+            {
+                if (dataGridViewDatabasesResults.Columns[e.ColumnIndex].Name == "colStatus")
+                {
+                    var item = (ExecutionDatabaseInfo)dataGridViewDatabasesResults.Rows[e.RowIndex].DataBoundItem;
+                    e.Value = imageListResults.Images[item.Status.ToString()];
+                }
+            };
 
             // Database name column
             var colName = new DataGridViewTextBoxColumn
@@ -281,7 +308,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 DataPropertyName = "ConnectionName",
                 HeaderText = Strings.Connection,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 ReadOnly = true
             };
             dataGridViewDatabasesResults.Columns.Add(colServer);
@@ -299,9 +326,16 @@ namespace SQLMultiScript.UI.Forms
         {
             if (e.Node.Level != 1) return; // script level
 
-            string scriptName = e.Node.Text;
+
 
             panelResults.Controls.Clear();
+
+
+            var executionScriptInfo = e.Node.Tag as ExecutionScriptInfo;
+
+            dataGridViewDatabasesResults.DataSource = executionScriptInfo?.DatabasesInfo;
+            dataGridViewDatabasesResults.Refresh();
+
 
             var tabControl = new TabControl { Dock = DockStyle.Fill };
 
@@ -320,12 +354,35 @@ namespace SQLMultiScript.UI.Forms
             };
             tabResults.Controls.Add(flowResults);
 
-            var executionScriptInfo = e.Node.Tag as ExecutionScriptInfo;
 
-            dataGridViewDatabasesResults.DataSource = executionScriptInfo?.DatabasesInfo;
+            // Aba Messages
+            var tabMessages = new TabPage("Mensagens");
+            tabControl.TabPages.Add(tabMessages);
+
+            var flowMessages = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true
+            };
+            tabMessages.Controls.Add(flowMessages);
 
 
-            dataGridViewDatabasesResults.Refresh();
+            var msgs = string.Join(Environment.NewLine, executionScriptInfo.DatabasesInfo.Select(di => di.Response?.MessagesText));
+
+            var textBox = new TextBox
+            {
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                Width = flowMessages.ClientSize.Width - 40,
+                Height = 200,
+                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top,
+                Font = new Font("Consolas", 9),
+                Text = msgs
+            };
+            flowMessages.Controls.Add(textBox);
 
             //if (_scriptResults.TryGetValue(scriptName, out var consolidatedResults) && consolidatedResults.Count > 0)
             //{
@@ -477,7 +534,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 DataPropertyName = "ConnectionName",
                 HeaderText = Strings.Connection,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 ReadOnly = true
             };
             dataGridViewDatabases.Columns.Add(colServer);
@@ -1301,6 +1358,8 @@ namespace SQLMultiScript.UI.Forms
 
                 UpdateTreeView();
 
+                UpdateExecutionStatus(execution, null, null);
+
                 await _scriptExecutorService.ExecuteAsync(execution, UpdateExecutionStatus);
 
 
@@ -1333,6 +1392,8 @@ namespace SQLMultiScript.UI.Forms
                 var node = new TreeNode(execution.Name)
                 {
                     Tag = execution,
+                    ImageKey = execution.Status.ToString(),
+                    SelectedImageKey = execution.Status.ToString()
                 };
                 treeViewExecutions.Nodes.Add(node);
 
@@ -1341,10 +1402,9 @@ namespace SQLMultiScript.UI.Forms
                 {
                     var nodeScript = new TreeNode(s.Script.Name)
                     {
-                        Tag = s, // Store the full object
-                                 // Do not check the root node
-                                 //ImageKey = "disconnected",
-                                 //SelectedImageKey = "disconnected"
+                        Tag = s,
+                        ImageKey = s.Status.ToString(),
+                        SelectedImageKey = s.Status.ToString()
                     };
 
 
@@ -1426,10 +1486,17 @@ namespace SQLMultiScript.UI.Forms
                     {
                         // Atualiza o status do script (pode ser feito com imagens ou texto)
                         scriptNode.Text = $"{scriptInfo.Script.Name} - {scriptInfo.Status}";
+                        scriptNode.ImageKey = scriptInfo.Status.ToString();
+                        scriptNode.SelectedImageKey = scriptInfo.Status.ToString();
                     }
                 }
                 // Atualiza o status geral da execução
                 executionNode.Text = $"{execution.Name} - {execution.Status}";
+                executionNode.ImageKey = execution.Status.ToString();
+                executionNode.SelectedImageKey = execution.Status.ToString();
+
+
+                dataGridViewDatabasesResults.Refresh();
             }
 
         }

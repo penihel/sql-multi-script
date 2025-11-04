@@ -4,6 +4,7 @@ using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using System.Data;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SQLMultiScript.Services
 {
@@ -121,9 +122,15 @@ namespace SQLMultiScript.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(string.Format("Erro ao executar script em {0}. Fazendo rollback." + Environment.NewLine + "{1}", HiddenConnectionInfo(connectionString), ex.Message));
+
                 scriptResponse.Success = false;
 
-                _logger.LogError(string.Format("Erro ao executar script em {0}. Fazendo rollback." + Environment.NewLine + "{1}", HiddenConnectionInfo(connectionString), ex.Message));
+                while (ex != null)
+                {
+                    scriptResponse.Messages.Add(ex.Message);
+                    ex = ex.InnerException;
+                }
 
                 try
                 {
@@ -132,8 +139,9 @@ namespace SQLMultiScript.Services
                 catch (Exception rbEx)
                 {
                     _logger.LogError(rbEx, rbEx.Message);
+                    throw;
                 }
-                throw;
+                
             }
 
             scriptResponse.DataSet = resultDataSet;
@@ -172,7 +180,6 @@ namespace SQLMultiScript.Services
 
             statusUpdated(execution, null, null);
 
-            var tasks = new List<Task>();
 
             foreach (var scriptInfo in execution.ScriptsInfo)
             {
@@ -182,9 +189,13 @@ namespace SQLMultiScript.Services
                 statusUpdated(execution, scriptInfo, null);
 
                 var script = scriptInfo.Script;
+                
+                var tasks = new List<Task>();
+
 
                 foreach (var databaseInfo in scriptInfo.DatabasesInfo)
                 {
+
 
                     tasks.Add(Task.Run(async () =>
                     {
@@ -222,12 +233,7 @@ namespace SQLMultiScript.Services
 
 
 
-                            //UPDATE ScriptInfo
-                            var scriptInfoError = scriptInfo.DatabasesInfo.Any(di => di.Status == ExecutionStatus.Error);
-
-                            scriptInfo.Status = scriptInfoError ? ExecutionStatus.Error : ExecutionStatus.Success;
-
-                            statusUpdated(execution, scriptInfo, null);
+                            
 
                         }
                         catch (Exception exScript)
@@ -245,14 +251,21 @@ namespace SQLMultiScript.Services
                     }));
 
 
+                   
                 }
 
+                await Task.WhenAll(tasks);
 
+                //UPDATE ScriptInfo
+                var scriptInfoError = scriptInfo.DatabasesInfo.Any(di => di.Status == ExecutionStatus.Error);
+
+                scriptInfo.Status = scriptInfoError ? ExecutionStatus.Error : ExecutionStatus.Success;
+
+                statusUpdated(execution, scriptInfo, null);
 
 
             }
 
-            await Task.WhenAll(tasks);
 
             var executionError = execution.ScriptsInfo.Any(si => si.Status == ExecutionStatus.Error);
 
