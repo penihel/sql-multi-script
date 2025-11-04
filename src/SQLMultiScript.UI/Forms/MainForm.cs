@@ -6,11 +6,8 @@ using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using SQLMultiScript.Resources;
 using SQLMultiScript.UI.ControlFactories;
-using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Data;
-using System.Text;
-using System.Windows.Forms;
 
 namespace SQLMultiScript.UI.Forms
 {
@@ -20,7 +17,7 @@ namespace SQLMultiScript.UI.Forms
 
         private readonly IProjectService _projectService;
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
-        private readonly IScriptExecutorService _scriptExecutorService;
+        private readonly IExecutionService _scriptExecutorService;
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
 
@@ -85,7 +82,7 @@ namespace SQLMultiScript.UI.Forms
             IProjectService projectService,
             IDatabaseDistributionListService databaseDistributionListService,
             IServiceProvider serviceProvider,
-            IScriptExecutorService scriptExecutorService)
+            IExecutionService scriptExecutorService)
         {
             _logger = logger;
             _projectService = projectService;
@@ -102,6 +99,7 @@ namespace SQLMultiScript.UI.Forms
             Text = $"{Constants.ApplicationName} - {Constants.ApplicationVersion}";
             Icon = new Icon("sql-multi-script.ico");
             WindowState = FormWindowState.Maximized;
+
             Load += MainForm_Load;
 
             var mainTableLayoutPanel = new TableLayoutPanel()
@@ -111,8 +109,8 @@ namespace SQLMultiScript.UI.Forms
                 ColumnCount = 1,
                 RowCount = 2
             };
-            mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
 
+            mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, TopHeight));
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
@@ -123,7 +121,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                //SplitterDistance = 200
+
             };
 
 
@@ -133,6 +131,7 @@ namespace SQLMultiScript.UI.Forms
 
             mainTableLayoutPanel.Controls.Add(mainTopButtonsPanel, 0, 0);
             mainTableLayoutPanel.Controls.Add(splitMain, 0, 1);
+
             Controls.Add(mainTableLayoutPanel);
 
             // Split esquerda
@@ -177,8 +176,16 @@ namespace SQLMultiScript.UI.Forms
 
 
             var logContainer = PanelFactory.Create();
-            logBox = new TextBox { Dock = DockStyle.Fill, Multiline = true, ScrollBars = ScrollBars.Vertical };
+
+            logBox = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical
+            };
+
             logContainer.Controls.Add(logBox);
+
             splitResultFooter.Panel2.Controls.Add(logContainer);
 
             InitializeMenu();
@@ -198,11 +205,7 @@ namespace SQLMultiScript.UI.Forms
 
             treeViewExecutions = new TreeView
             {
-                Dock = DockStyle.Fill,
-                //BorderStyle = BorderStyle.FixedSingle,
-                // Add space at the top to avoid touching the label
-                //Margin = new Padding(0, 4, 0, 0),
-                //CheckBoxes = true
+                Dock = DockStyle.Fill
             };
 
             treeViewExecutions.AfterSelect += treeViewExecutions_AfterSelect;
@@ -247,10 +250,20 @@ namespace SQLMultiScript.UI.Forms
             // Checkbox
             var colSelected = new DataGridViewCheckBoxColumn
             {
-                DataPropertyName = "Selected",
+                DataPropertyName = nameof(Database.Selected),
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
             };
             dataGridViewDatabasesResults.Columns.Add(colSelected);
+
+            // Database name column
+            var colStatus = new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Status",
+                HeaderText = Strings.Status,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                ReadOnly = true
+            };
+            dataGridViewDatabasesResults.Columns.Add(colStatus);
 
             // Database name column
             var colName = new DataGridViewTextBoxColumn
@@ -285,11 +298,13 @@ namespace SQLMultiScript.UI.Forms
         private void treeViewExecutions_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (e.Node.Level != 1) return; // script level
+
             string scriptName = e.Node.Text;
 
             panelResults.Controls.Clear();
 
             var tabControl = new TabControl { Dock = DockStyle.Fill };
+
             panelResults.Controls.Add(tabControl);
 
             // Aba Resultados
@@ -305,87 +320,94 @@ namespace SQLMultiScript.UI.Forms
             };
             tabResults.Controls.Add(flowResults);
 
-            if (_scriptResults.TryGetValue(scriptName, out var consolidatedResults) && consolidatedResults.Count > 0)
-            {
-                int idx = 1;
-                foreach (var kvp in consolidatedResults.OrderBy(k => k.Key))
-                {
-                    var dt = kvp.Value;
+            var executionScriptInfo = e.Node.Tag as ExecutionScriptInfo;
 
-                    var label = new Label
-                    {
-                        Text = $"Resultado #{idx} — {dt.Rows.Count} linhas",
-                        AutoSize = true,
-                        Font = new Font(Font, FontStyle.Bold),
-                        Padding = new Padding(0, 10, 0, 2)
-                    };
+            dataGridViewDatabasesResults.DataSource = executionScriptInfo?.DatabasesInfo;
 
-                    var grid = new DataGridView
-                    {
-                        DataSource = dt,
-                        ReadOnly = true,
-                        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells,
-                        AllowUserToAddRows = false,
-                        AllowUserToDeleteRows = false,
-                        Width = flowResults.ClientSize.Width - 40,
-                        Height = Math.Min(400, 40 + dt.Rows.Count * 22),
-                        Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
-                    };
 
-                    flowResults.Controls.Add(label);
-                    flowResults.Controls.Add(grid);
-                    idx++;
-                }
-            }
-            else
-            {
-                flowResults.Controls.Add(new Label
-                {
-                    Text = "Nenhum resultado retornado.",
-                    AutoSize = true,
-                    Padding = new Padding(10),
-                    Font = new Font(Font, FontStyle.Italic)
-                });
-            }
+            dataGridViewDatabasesResults.Refresh();
 
-            // Aba Mensagens
-            var tabMessages = new TabPage("Mensagens");
-            tabControl.TabPages.Add(tabMessages);
+            //if (_scriptResults.TryGetValue(scriptName, out var consolidatedResults) && consolidatedResults.Count > 0)
+            //{
+            //    int idx = 1;
+            //    foreach (var kvp in consolidatedResults.OrderBy(k => k.Key))
+            //    {
+            //        var dt = kvp.Value;
 
-            var flowMessages = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true
-            };
-            tabMessages.Controls.Add(flowMessages);
+            //        var label = new Label
+            //        {
+            //            Text = $"Resultado #{idx} — {dt.Rows.Count} linhas",
+            //            AutoSize = true,
+            //            Font = new Font(Font, FontStyle.Bold),
+            //            Padding = new Padding(0, 10, 0, 2)
+            //        };
 
-            if (_scriptMessages.TryGetValue(scriptName, out var msgs) && msgs.Count > 0)
-            {
-                var textBox = new TextBox
-                {
-                    Multiline = true,
-                    ReadOnly = true,
-                    ScrollBars = ScrollBars.Vertical,
-                    Width = flowMessages.ClientSize.Width - 40,
-                    Height = 200,
-                    Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top,
-                    Font = new Font("Consolas", 9),
-                    Text = string.Join(Environment.NewLine + Environment.NewLine, msgs)
-                };
-                flowMessages.Controls.Add(textBox);
-            }
-            else
-            {
-                flowMessages.Controls.Add(new Label
-                {
-                    Text = "Nenhuma mensagem retornada.",
-                    AutoSize = true,
-                    Padding = new Padding(10),
-                    Font = new Font(Font, FontStyle.Italic)
-                });
-            }
+            //        var grid = new DataGridView
+            //        {
+            //            DataSource = dt,
+            //            ReadOnly = true,
+            //            AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells,
+            //            AllowUserToAddRows = false,
+            //            AllowUserToDeleteRows = false,
+            //            Width = flowResults.ClientSize.Width - 40,
+            //            Height = Math.Min(400, 40 + dt.Rows.Count * 22),
+            //            Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
+            //        };
+
+            //        flowResults.Controls.Add(label);
+            //        flowResults.Controls.Add(grid);
+            //        idx++;
+            //    }
+            //}
+            //else
+            //{
+            //    flowResults.Controls.Add(new Label
+            //    {
+            //        Text = "Nenhum resultado retornado.",
+            //        AutoSize = true,
+            //        Padding = new Padding(10),
+            //        Font = new Font(Font, FontStyle.Italic)
+            //    });
+            //}
+
+            //// Aba Mensagens
+            //var tabMessages = new TabPage("Mensagens");
+            //tabControl.TabPages.Add(tabMessages);
+
+            //var flowMessages = new FlowLayoutPanel
+            //{
+            //    Dock = DockStyle.Fill,
+            //    FlowDirection = FlowDirection.TopDown,
+            //    WrapContents = false,
+            //    AutoScroll = true
+            //};
+            //tabMessages.Controls.Add(flowMessages);
+
+            //if (_scriptMessages.TryGetValue(scriptName, out var msgs) && msgs.Count > 0)
+            //{
+            //    var textBox = new TextBox
+            //    {
+            //        Multiline = true,
+            //        ReadOnly = true,
+            //        ScrollBars = ScrollBars.Vertical,
+            //        Width = flowMessages.ClientSize.Width - 40,
+            //        Height = 200,
+            //        Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top,
+            //        Font = new Font("Consolas", 9),
+            //        Text = string.Join(Environment.NewLine + Environment.NewLine, msgs)
+            //    };
+            //    flowMessages.Controls.Add(textBox);
+            //}
+            //else
+            //{
+            //    flowMessages.Controls.Add(new Label
+            //    {
+            //        Text = "Nenhuma mensagem retornada.",
+            //        AutoSize = true,
+            //        Padding = new Padding(10),
+            //        Font = new Font(Font, FontStyle.Italic)
+            //    });
+            //}
         }
 
         private void SetupTopButtonsPanel(Panel parentPanel)
@@ -997,6 +1019,7 @@ namespace SQLMultiScript.UI.Forms
             if (_activeScript != null)
             {
                 _activeScript.IsDirty = true;
+                _activeScript.Content = sqlEditor.Text;
             }
         }
 
@@ -1219,12 +1242,12 @@ namespace SQLMultiScript.UI.Forms
         }
 
         // Armazena resultados por script
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, DataTable>> _scriptResults
-            = new ConcurrentDictionary<string, ConcurrentDictionary<int, DataTable>>();
+        //private readonly ConcurrentBag<exe> _scriptResponses = new ConcurrentBag<ScriptResponse>();
+
 
         // Armazena mensagens por script
-        private readonly ConcurrentDictionary<string, List<string>> _scriptMessages
-            = new ConcurrentDictionary<string, List<string>>();
+        //private readonly ConcurrentDictionary<string, List<string>> _scriptMessages
+        //= new ConcurrentDictionary<string, List<string>>();
 
         private async void BtnRun_Click(object sender, EventArgs e)
         {
@@ -1268,105 +1291,21 @@ namespace SQLMultiScript.UI.Forms
 
                 Log($"Iniciando execução em {selectedDatabases.Count} banco(s) com {selectedScripts.Count} script(s)...");
 
+
+
                 await _scriptExecutorService.LoadConnectionsAsync();
 
-                // Limpa dados antigos
-                _scriptResults.Clear();
-                _scriptMessages.Clear();
 
-                // Semaphore para limitar o número de execuções simultâneas
-                using var semaphore = new SemaphoreSlim(1); // 5 threads paralelas
 
-                CreateExecution(selectedScripts, selectedDatabases);
+                var execution = CreateExecution(selectedScripts, selectedDatabases);
+
                 UpdateTreeView();
 
-                var tasks = selectedDatabases.Select(async db =>
-                {
-                    await semaphore.WaitAsync();
-                    try
-                    {
-                        foreach (var script in selectedScripts)
-                        {
-                            try
-                            {
-                                Log($"Executando script '{script.Name}' em '{db.DatabaseName}'...");
+                await _scriptExecutorService.ExecuteAsync(execution, UpdateExecutionStatus);
 
-                                var scriptExecutorResponse = await _scriptExecutorService.ExecuteAsync(db, script, Log);
 
-                                var dataSet = scriptExecutorResponse.DataSet;
 
-                                // ✅ Armazena resultados
-                                if (dataSet != null && dataSet.Tables.Count > 0)
-                                {
-                                    for (int resultIndex = 0; resultIndex < dataSet.Tables.Count; resultIndex++)
-                                    {
-                                        var dt = dataSet.Tables[resultIndex];
 
-                                        var consolidated = _scriptResults
-                                            .GetOrAdd(script.Name, _ => new ConcurrentDictionary<int, DataTable>())
-                                            .GetOrAdd(resultIndex, _ =>
-                                            {
-                                                var newDt = dt.Clone();
-                                                newDt.TableName = $"Result_{resultIndex + 1}";
-                                                newDt.Columns.Add("ConnectionName", typeof(string));
-                                                newDt.Columns.Add("DatabaseName", typeof(string));
-                                                newDt.Columns["ConnectionName"].SetOrdinal(0);
-                                                newDt.Columns["DatabaseName"].SetOrdinal(1);
-                                                return newDt;
-                                            });
-
-                                        lock (consolidated)
-                                        {
-                                            foreach (DataRow row in dt.Rows)
-                                            {
-                                                var newRow = consolidated.NewRow();
-                                                foreach (DataColumn col in dt.Columns)
-                                                    newRow[col.ColumnName] = row[col.ColumnName];
-
-                                                newRow["ConnectionName"] = db.ConnectionName;
-                                                newRow["DatabaseName"] = db.DatabaseName;
-                                                consolidated.Rows.Add(newRow);
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // ✅ Armazena mensagens sempre, mesmo que não haja DataSet
-                                if (scriptExecutorResponse.Messages.Count > 0)
-                                {
-                                    var formatted = new StringBuilder();
-                                    formatted.AppendLine($"🔹 Banco: {db.DatabaseName}");
-                                    foreach (var msg in scriptExecutorResponse.Messages)
-                                        formatted.AppendLine(msg);
-
-                                    _scriptMessages.AddOrUpdate(
-                                        script.Name,
-                                        _ => new List<string> { formatted.ToString() },
-                                        (_, list) =>
-                                        {
-                                            lock (list) list.Add(formatted.ToString());
-                                            return list;
-                                        });
-                                }
-
-                                Log($"Concluído '{script.Name}' em '{db.DatabaseName}'.");
-                            }
-                            catch (Exception exScript)
-                            {
-                                Log($"Erro ao executar script '{script.Name}' no banco '{db.DatabaseName}': {exScript.Message}", true);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                }).ToList();
-
-                await Task.WhenAll(tasks);
-
-                Log("Execução concluída com sucesso.");
-                //MessageBox.Show("Execução concluída com sucesso.", "Concluído", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -1389,19 +1328,16 @@ namespace SQLMultiScript.UI.Forms
             treeViewExecutions.BeginUpdate();
             treeViewExecutions.Nodes.Clear();
 
-            foreach (var e in _executions)
+            foreach (var execution in _executions)
             {
-                var node = new TreeNode(e.Name)
+                var node = new TreeNode(execution.Name)
                 {
-                    Tag = e, // Store the full object
-                    // Do not check the root node
-                    //ImageKey = "disconnected",
-                    //SelectedImageKey = "disconnected"
+                    Tag = execution,
                 };
                 treeViewExecutions.Nodes.Add(node);
 
 
-                foreach (var s in e.ScriptsInfo)
+                foreach (var s in execution.ScriptsInfo)
                 {
                     var nodeScript = new TreeNode(s.Script.Name)
                     {
@@ -1411,30 +1347,23 @@ namespace SQLMultiScript.UI.Forms
                                  //SelectedImageKey = "disconnected"
                     };
 
-                    
+
                     node.Nodes.Add(nodeScript);
 
-                    foreach (var d in s.DatabasesInfo)
-                    {
-                        var nodeDatabase = new TreeNode(d.Database.DatabaseName)
-                        {
-                            Tag = d, // Store the full object
-                                     // Do not check the root node
-                                     //ImageKey = "disconnected",
-                                     //SelectedImageKey = "disconnected"
-                        };
 
-                        nodeScript.Nodes.Add(nodeDatabase);
-                    }
                 }
             }
 
             treeViewExecutions.EndUpdate();
+
+            treeViewExecutions.Nodes[0].Expand();
+            treeViewExecutions.SelectedNode = treeViewExecutions.Nodes[0].Nodes[0];
+            treeViewExecutions.Focus();
         }
 
-        private void CreateExecution(List<Script> selectedScripts, List<Database> selectedDatabases)
+        private Execution CreateExecution(List<Script> selectedScripts, List<Database> selectedDatabases)
         {
-            _executions.Add(new Execution()
+            var execution = new Execution()
             {
                 Name = $"Execution in {DateTime.Now}",
                 Status = ExecutionStatus.Queued,
@@ -1448,7 +1377,11 @@ namespace SQLMultiScript.UI.Forms
                         Status = ExecutionStatus.Queued,
                     }).ToList())
                 }).ToList())
-            });
+            };
+
+            _executions.Insert(0, execution);
+
+            return execution;
         }
 
         private void Log(string message, bool isError = false)
@@ -1468,5 +1401,37 @@ namespace SQLMultiScript.UI.Forms
                 _logger.LogInformation(message);
         }
 
+
+        void UpdateExecutionStatus(Execution execution, ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => UpdateExecutionStatus(execution, scriptInfo, databaseInfo)));
+                return;
+            }
+
+            // Atualiza a TreeView
+            var executionNode = treeViewExecutions.Nodes
+                .Cast<TreeNode>()
+                .FirstOrDefault(n => n.Tag == execution);
+            if (executionNode != null)
+            {
+                // Atualiza o nó do script
+                if (scriptInfo != null)
+                {
+                    var scriptNode = executionNode.Nodes
+                        .Cast<TreeNode>()
+                        .FirstOrDefault(n => n.Tag == scriptInfo);
+                    if (scriptNode != null)
+                    {
+                        // Atualiza o status do script (pode ser feito com imagens ou texto)
+                        scriptNode.Text = $"{scriptInfo.Script.Name} - {scriptInfo.Status}";
+                    }
+                }
+                // Atualiza o status geral da execução
+                executionNode.Text = $"{execution.Name} - {execution.Status}";
+            }
+
+        }
     }
 }

@@ -198,4 +198,7 @@
   <data name="Execute" xml:space="preserve">
     <value>Executar</value>
   </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
 </root>
