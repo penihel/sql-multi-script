@@ -4,7 +4,6 @@ using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using System.Data;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace SQLMultiScript.Services
 {

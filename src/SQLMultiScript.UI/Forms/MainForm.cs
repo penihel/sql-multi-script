@@ -42,7 +42,7 @@ namespace SQLMultiScript.UI.Forms
         private TextBox logBox;
         private MenuStrip menuStrip;
 
-        private Panel panelResults;
+        private TextBox textBoxMessages;
 
         private ComboBox comboBoxDatabaseDistributionList;
 
@@ -81,6 +81,18 @@ namespace SQLMultiScript.UI.Forms
         }
 
 
+        private ExecutionScriptInfo _selectedExecutionScriptInfo;
+        public ExecutionScriptInfo SelectedExecutionScriptInfo
+        {
+            get => _selectedExecutionScriptInfo;
+            set
+            {
+                if (SetProperty(ref _selectedExecutionScriptInfo, value))
+                {
+                    SelectedExecutionScriptInfoChanged();
+                }
+            }
+        }
 
         public MainForm(
             ILogger logger,
@@ -193,7 +205,9 @@ namespace SQLMultiScript.UI.Forms
             {
                 Dock = DockStyle.Fill,
                 Multiline = true,
-                ScrollBars = ScrollBars.Vertical
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                Font = new Font("Consolas", 9),
             };
 
             logContainer.Controls.Add(logBox);
@@ -229,7 +243,8 @@ namespace SQLMultiScript.UI.Forms
             treeViewExecutions.AfterSelect += treeViewExecutions_AfterSelect;
 
             var treeContainer = PanelFactory.Create();
-            panelResults = PanelFactory.Create();
+
+
 
             treeContainer.Controls.Add(treeViewExecutions);
 
@@ -318,6 +333,62 @@ namespace SQLMultiScript.UI.Forms
 
             gridContainer.Controls.Add(dataGridViewDatabasesResults);
 
+
+            //PANEL RESULTIS
+            var panelResults = PanelFactory.Create();
+
+            var tabControl = new TabControl { Dock = DockStyle.Fill };
+
+            panelResults.Controls.Add(tabControl);
+
+            // Aba Messages
+            var tabMessages = new TabPage("Mensagens")
+            {
+                BackColor = Color.Pink
+            };
+
+            tabControl.TabPages.Add(tabMessages);
+
+            var tableLayoutPanelMessages = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+            };
+            tabMessages.Controls.Add(tableLayoutPanelMessages);
+
+
+
+
+            textBoxMessages = new TextBox
+            {
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                Font = UIConstants.FontLog,
+                Dock = DockStyle.Fill,
+
+
+            };
+
+            tableLayoutPanelMessages.Controls.Add(textBoxMessages);
+
+
+            // Aba Resultados
+            var tabResults = new TabPage("Resultados");
+            tabControl.TabPages.Add(tabResults);
+
+            var flowResults = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true
+            };
+
+            tabResults.Controls.Add(flowResults);
+
+
+
+
+
             splitDatabasesAndResults.Panel1.Controls.Add(gridContainer);
             splitDatabasesAndResults.Panel2.Controls.Add(panelResults);
         }
@@ -328,143 +399,20 @@ namespace SQLMultiScript.UI.Forms
 
 
 
-            panelResults.Controls.Clear();
+
 
 
             var executionScriptInfo = e.Node.Tag as ExecutionScriptInfo;
+
+            SelectedExecutionScriptInfo = executionScriptInfo;
 
             dataGridViewDatabasesResults.DataSource = executionScriptInfo?.DatabasesInfo;
             dataGridViewDatabasesResults.Refresh();
 
 
-            var tabControl = new TabControl { Dock = DockStyle.Fill };
-
-            panelResults.Controls.Add(tabControl);
-
-            // Aba Resultados
-            var tabResults = new TabPage("Resultados");
-            tabControl.TabPages.Add(tabResults);
-
-            var flowResults = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true
-            };
-            tabResults.Controls.Add(flowResults);
+            SelectedExecutionScriptInfoChanged();
 
 
-            // Aba Messages
-            var tabMessages = new TabPage("Mensagens");
-            tabControl.TabPages.Add(tabMessages);
-
-            var flowMessages = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true
-            };
-            tabMessages.Controls.Add(flowMessages);
-
-
-            var msgs = string.Join(Environment.NewLine, executionScriptInfo.DatabasesInfo.Select(di => di.Response?.MessagesText));
-
-            var textBox = new TextBox
-            {
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                Width = flowMessages.ClientSize.Width - 40,
-                Height = 200,
-                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top,
-                Font = new Font("Consolas", 9),
-                Text = msgs
-            };
-            flowMessages.Controls.Add(textBox);
-
-            //if (_scriptResults.TryGetValue(scriptName, out var consolidatedResults) && consolidatedResults.Count > 0)
-            //{
-            //    int idx = 1;
-            //    foreach (var kvp in consolidatedResults.OrderBy(k => k.Key))
-            //    {
-            //        var dt = kvp.Value;
-
-            //        var label = new Label
-            //        {
-            //            Text = $"Resultado #{idx} — {dt.Rows.Count} linhas",
-            //            AutoSize = true,
-            //            Font = new Font(Font, FontStyle.Bold),
-            //            Padding = new Padding(0, 10, 0, 2)
-            //        };
-
-            //        var grid = new DataGridView
-            //        {
-            //            DataSource = dt,
-            //            ReadOnly = true,
-            //            AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells,
-            //            AllowUserToAddRows = false,
-            //            AllowUserToDeleteRows = false,
-            //            Width = flowResults.ClientSize.Width - 40,
-            //            Height = Math.Min(400, 40 + dt.Rows.Count * 22),
-            //            Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
-            //        };
-
-            //        flowResults.Controls.Add(label);
-            //        flowResults.Controls.Add(grid);
-            //        idx++;
-            //    }
-            //}
-            //else
-            //{
-            //    flowResults.Controls.Add(new Label
-            //    {
-            //        Text = "Nenhum resultado retornado.",
-            //        AutoSize = true,
-            //        Padding = new Padding(10),
-            //        Font = new Font(Font, FontStyle.Italic)
-            //    });
-            //}
-
-            //// Aba Mensagens
-            //var tabMessages = new TabPage("Mensagens");
-            //tabControl.TabPages.Add(tabMessages);
-
-            //var flowMessages = new FlowLayoutPanel
-            //{
-            //    Dock = DockStyle.Fill,
-            //    FlowDirection = FlowDirection.TopDown,
-            //    WrapContents = false,
-            //    AutoScroll = true
-            //};
-            //tabMessages.Controls.Add(flowMessages);
-
-            //if (_scriptMessages.TryGetValue(scriptName, out var msgs) && msgs.Count > 0)
-            //{
-            //    var textBox = new TextBox
-            //    {
-            //        Multiline = true,
-            //        ReadOnly = true,
-            //        ScrollBars = ScrollBars.Vertical,
-            //        Width = flowMessages.ClientSize.Width - 40,
-            //        Height = 200,
-            //        Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top,
-            //        Font = new Font("Consolas", 9),
-            //        Text = string.Join(Environment.NewLine + Environment.NewLine, msgs)
-            //    };
-            //    flowMessages.Controls.Add(textBox);
-            //}
-            //else
-            //{
-            //    flowMessages.Controls.Add(new Label
-            //    {
-            //        Text = "Nenhuma mensagem retornada.",
-            //        AutoSize = true,
-            //        Padding = new Padding(10),
-            //        Font = new Font(Font, FontStyle.Italic)
-            //    });
-            //}
         }
 
         private void SetupTopButtonsPanel(Panel parentPanel)
@@ -1358,6 +1306,8 @@ namespace SQLMultiScript.UI.Forms
 
                 UpdateTreeView();
 
+                //treeViewExecutions.Enabled = false;
+
                 UpdateExecutionStatus(execution, null, null);
 
                 await _scriptExecutorService.ExecuteAsync(execution, UpdateExecutionStatus);
@@ -1375,6 +1325,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 btn.Enabled = true;
                 Cursor = Cursors.Default;
+                treeViewExecutions.Enabled = true;
             }
         }
 
@@ -1389,7 +1340,7 @@ namespace SQLMultiScript.UI.Forms
 
             foreach (var execution in _executions)
             {
-                var node = new TreeNode(execution.Name)
+                var node = new TreeNode($"{execution.Name} - {execution.Status}")
                 {
                     Tag = execution,
                     ImageKey = execution.Status.ToString(),
@@ -1400,7 +1351,7 @@ namespace SQLMultiScript.UI.Forms
 
                 foreach (var s in execution.ScriptsInfo)
                 {
-                    var nodeScript = new TreeNode(s.Script.Name)
+                    var nodeScript = new TreeNode($"{s.Script.Name} - {s.Status}")
                     {
                         Tag = s,
                         ImageKey = s.Status.ToString(),
@@ -1416,9 +1367,13 @@ namespace SQLMultiScript.UI.Forms
 
             treeViewExecutions.EndUpdate();
 
+
+
+
             treeViewExecutions.Nodes[0].Expand();
             treeViewExecutions.SelectedNode = treeViewExecutions.Nodes[0].Nodes[0];
             treeViewExecutions.Focus();
+
         }
 
         private Execution CreateExecution(List<Script> selectedScripts, List<Database> selectedDatabases)
@@ -1470,10 +1425,14 @@ namespace SQLMultiScript.UI.Forms
                 return;
             }
 
+
+
             // Atualiza a TreeView
             var executionNode = treeViewExecutions.Nodes
                 .Cast<TreeNode>()
                 .FirstOrDefault(n => n.Tag == execution);
+
+
             if (executionNode != null)
             {
                 // Atualiza o nó do script
@@ -1488,8 +1447,15 @@ namespace SQLMultiScript.UI.Forms
                         scriptNode.Text = $"{scriptInfo.Script.Name} - {scriptInfo.Status}";
                         scriptNode.ImageKey = scriptInfo.Status.ToString();
                         scriptNode.SelectedImageKey = scriptInfo.Status.ToString();
+
+
+
                     }
+
+                    SelectedExecutionScriptInfoChanged();
+
                 }
+
                 // Atualiza o status geral da execução
                 executionNode.Text = $"{execution.Name} - {execution.Status}";
                 executionNode.ImageKey = execution.Status.ToString();
@@ -1497,6 +1463,34 @@ namespace SQLMultiScript.UI.Forms
 
 
                 dataGridViewDatabasesResults.Refresh();
+
+
+            }
+
+
+        }
+
+
+        void SelectedExecutionScriptInfoChanged()
+        {
+
+            if (SelectedExecutionScriptInfo == null)
+            {
+                dataGridViewDatabasesResults.DataSource = null;
+                dataGridViewDatabasesResults.Refresh();
+                return;
+            }
+
+            textBoxMessages.Text = string.Empty;
+
+            foreach (var databaseInfo in SelectedExecutionScriptInfo.DatabasesInfo)
+            {
+                if (databaseInfo.Response != null && !string.IsNullOrEmpty(databaseInfo.Response.MessagesText))
+                {
+                    textBoxMessages.AppendText(
+                        $"[{databaseInfo.DatabaseName}] {databaseInfo.Response.MessagesText}"
+                         + Environment.NewLine);
+                }
             }
 
         }
