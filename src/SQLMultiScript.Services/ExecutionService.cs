@@ -58,7 +58,7 @@ namespace SQLMultiScript.Services
             sqlConnection.InfoMessage += (s, e) =>
             {
 
-                scriptResponse.Messages.Add(e.Message);
+                scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {e.Message}");
 
             };
 
@@ -86,7 +86,7 @@ namespace SQLMultiScript.Services
                     {
                         // Captura mensagens do tipo "(X rows affected)"
                         if (e.RecordCount >= 0)
-                            scriptResponse.Messages.Add($"{e.RecordCount} linha(s) afetada(s)");
+                            scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {e.RecordCount} linha(s) afetada(s)");
                     };
                     cmd.CommandTimeout = _commandTimeoutSeconds;
 
@@ -127,7 +127,7 @@ namespace SQLMultiScript.Services
 
                 while (ex != null)
                 {
-                    scriptResponse.Messages.Add(ex.Message);
+                    scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {ex.Message}");
                     ex = ex.InnerException;
                 }
 

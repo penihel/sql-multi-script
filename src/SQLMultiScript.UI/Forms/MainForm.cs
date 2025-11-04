@@ -342,10 +342,7 @@ namespace SQLMultiScript.UI.Forms
             panelResults.Controls.Add(tabControl);
 
             // Aba Messages
-            var tabMessages = new TabPage("Mensagens")
-            {
-                BackColor = Color.Pink
-            };
+            var tabMessages = new TabPage("Mensagens");
 
             tabControl.TabPages.Add(tabMessages);
 
@@ -1487,9 +1484,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 if (databaseInfo.Response != null && !string.IsNullOrEmpty(databaseInfo.Response.MessagesText))
                 {
-                    textBoxMessages.AppendText(
-                        $"[{databaseInfo.DatabaseName}] {databaseInfo.Response.MessagesText}"
-                         + Environment.NewLine);
+                    textBoxMessages.AppendText(databaseInfo.Response.MessagesText + Environment.NewLine);
                 }
             }
 
