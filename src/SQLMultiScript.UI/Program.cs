@@ -49,20 +49,21 @@ namespace SQLMultiScript.UI
                 // Pega o logger diretamente
                 var logger = provider.GetRequiredService<ILogger>();
 
-                logger.LogInformation("Aplicação iniciada");
+                logger.LogInformation("Application iniciada");
 
                 Application.ThreadException += (s, e) =>
                 {
-                    logger.LogError(e.Exception, "Erro não tratado no thread da UI");
+                    logger.LogError(e.Exception, e.Exception.Message);
                 };
 
                 AppDomain.CurrentDomain.UnhandledException += (s, e) =>
                 {
                     if (e.ExceptionObject is Exception ex)
-                        logger.LogCritical(ex, "Erro fatal");
+                        logger.LogCritical(ex, ex.Message);
                 };
 
                 var mainForm = provider.GetRequiredService<MainForm>();
+
                 Application.Run(mainForm);
             }
         }
