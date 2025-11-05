@@ -6,17 +6,23 @@ using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using SQLMultiScript.Resources;
 using SQLMultiScript.UI.ControlFactories;
+using SQLMultiScript.UI.UserControls;
 using System.ComponentModel;
 using System.Data;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SQLMultiScript.UI.Forms
 {
     public class MainForm : BaseForm
     {
-        //constants
+        // -----------------------
+        // Constants
+        // -----------------------
         private const int TopHeight = 60;
 
-        //services
+        // -----------------------
+        // Services
+        // -----------------------
         private readonly IProjectService _projectService;
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
         private readonly IExecutionService _scriptExecutorService;
@@ -24,14 +30,18 @@ namespace SQLMultiScript.UI.Forms
         private readonly IServiceProvider _serviceProvider;
 
 
-        //fields
+        // -----------------------
+        // Fields
+        // -----------------------
         private Project _currentProject = null;
         private Script _activeScript = null;
 
         private BindingList<Execution> _executions = new BindingList<Execution>();
 
 
-        //controls
+        // -----------------------
+        // Controls
+        // -----------------------
         private DataGridView
             dataGridViewScripts,
             dataGridViewDatabases,
@@ -40,18 +50,22 @@ namespace SQLMultiScript.UI.Forms
         private TreeView treeViewExecutions;
 
         private Scintilla sqlEditor;
-        private TextBox logBox;
+
         private MenuStrip menuStrip;
 
-        private TextBox textBoxMessages;
+        private OutputMessagesPanel
+            outputMessagesLog,
+            outputMessagesResults;
 
         private ComboBox comboBoxDatabaseDistributionList;
 
-        //ImageList de Status
-        private ImageList imageListResults = new ImageList();
+
+        private ImageList imageListResults;
 
 
-        //Properties
+        // -----------------------
+        // Properties
+        // -----------------------
 
         #region DatabaseDistributionLists
 
@@ -74,6 +88,7 @@ namespace SQLMultiScript.UI.Forms
             comboBoxDatabaseDistributionList.Refresh();
             dataGridViewDatabases.Refresh();
         }
+
         #endregion
 
 
@@ -109,8 +124,11 @@ namespace SQLMultiScript.UI.Forms
 
             dataGridViewDatabases.Refresh();
         }
+
         #endregion
 
+
+        #region SelectedExecutionScriptInfo
 
         private ExecutionScriptInfo _selectedExecutionScriptInfo;
         public ExecutionScriptInfo SelectedExecutionScriptInfo
@@ -125,6 +143,50 @@ namespace SQLMultiScript.UI.Forms
             }
         }
 
+        private void SelectedExecutionScriptInfoChanged()
+        {
+
+            if (SelectedExecutionScriptInfo == null)
+            {
+                dataGridViewDatabasesResults.DataSource = null;
+                dataGridViewDatabasesResults.Refresh();
+                return;
+            }
+
+            outputMessagesResults.ClearMessages();
+
+            foreach (var databaseInfo in SelectedExecutionScriptInfo.DatabasesInfo)
+            {
+                if (databaseInfo.Response != null && !string.IsNullOrEmpty(databaseInfo.Response.MessagesText))
+                {
+                    if (databaseInfo.Status == ExecutionStatus.Error)
+                    {
+                        outputMessagesResults.AppendError(databaseInfo.Response.MessagesText);
+                    }
+                    else
+                    {
+                        outputMessagesResults.AppendInfo(databaseInfo.Response.MessagesText);
+                    }
+
+                }
+            }
+
+
+            
+
+        }
+
+        #endregion
+
+
+        /// <summary>
+        /// Constructor Default
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="projectService"></param>
+        /// <param name="databaseDistributionListService"></param>
+        /// <param name="serviceProvider"></param>
+        /// <param name="scriptExecutorService"></param>
         public MainForm(
             ILogger logger,
             IProjectService projectService,
@@ -141,14 +203,22 @@ namespace SQLMultiScript.UI.Forms
             InitializeLayout();
         }
 
+        /// <summary>
+        /// Initialize Layout (root method)
+        /// </summary>
         private void InitializeLayout()
         {
+
+            InitImageLists();
+
 
             Text = $"{Constants.ApplicationName} - {Constants.ApplicationVersion}";
             Icon = new Icon("sql-multi-script.ico");
             WindowState = FormWindowState.Maximized;
 
+
             Load += MainForm_Load;
+
 
             var mainTableLayoutPanel = new TableLayoutPanel()
             {
@@ -163,20 +233,14 @@ namespace SQLMultiScript.UI.Forms
             mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
 
-            //ImageList Results
-            imageListResults.ImageSize = new Size(16, 16);
 
-            imageListResults.Images.Add("Queued", Images.circle_gray);
-            imageListResults.Images.Add("Executing", Images.circle_blue);
-            imageListResults.Images.Add("Error", Images.circle_red);
-            imageListResults.Images.Add("Success", Images.circle_green);
 
-            // Split principal (top/bottom)
-            var splitMain = new SplitContainer
+
+            // main Split (top/bottom)
+            var mainSplitContainer = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-
             };
 
 
@@ -184,29 +248,31 @@ namespace SQLMultiScript.UI.Forms
 
             SetupTopButtonsPanel(mainTopButtonsPanel);
 
+
             mainTableLayoutPanel.Controls.Add(mainTopButtonsPanel, 0, 0);
-            mainTableLayoutPanel.Controls.Add(splitMain, 0, 1);
+            mainTableLayoutPanel.Controls.Add(mainSplitContainer, 0, 1);
 
             Controls.Add(mainTableLayoutPanel);
 
-            // Split esquerda
+            // Split Left
             var splitLeft = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
                 SplitterDistance = 10
             };
-            splitMain.Panel1.Controls.Add(splitLeft);
+
+            mainSplitContainer.Panel1.Controls.Add(splitLeft);
 
             // Setup Scripts Panel
             SetupScriptsPanel(splitLeft.Panel1);
 
-            // Split centro/direita
+            // Split center/right
             var splitCenterRight = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 600
+                SplitterDistance = GetPercentOfScreenWidth(0.7M)
             };
             splitLeft.Panel2.Controls.Add(splitCenterRight);
 
@@ -221,9 +287,9 @@ namespace SQLMultiScript.UI.Forms
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 300
+                SplitterDistance = GetPercentOfScreenHeight(0.5M)
             };
-            splitMain.Panel2.Controls.Add(splitResultFooter);
+            mainSplitContainer.Panel2.Controls.Add(splitResultFooter);
 
 
 
@@ -232,20 +298,26 @@ namespace SQLMultiScript.UI.Forms
 
             var logContainer = PanelFactory.Create();
 
-            logBox = new TextBox
-            {
-                Dock = DockStyle.Fill,
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                Font = new Font("Consolas", 9),
-            };
+            outputMessagesLog = new OutputMessagesPanel();
 
-            logContainer.Controls.Add(logBox);
+            logContainer.Controls.Add(outputMessagesLog);
 
             splitResultFooter.Panel2.Controls.Add(logContainer);
 
             InitializeMenu();
+        }
+
+        private void InitImageLists()
+        {
+            imageListResults = new ImageList()
+            {
+                ImageSize = new Size(16, 16)
+            };
+
+            imageListResults.Images.Add(nameof(ExecutionStatus.Queued), Images.circle_gray);
+            imageListResults.Images.Add(nameof(ExecutionStatus.Executing), Images.circle_blue);
+            imageListResults.Images.Add(nameof(ExecutionStatus.Error), Images.circle_red);
+            imageListResults.Images.Add(nameof(ExecutionStatus.Success), Images.circle_green);
         }
 
         private void SetupResultPanel(Panel panel)
@@ -387,18 +459,9 @@ namespace SQLMultiScript.UI.Forms
 
 
 
-            textBoxMessages = new TextBox
-            {
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                Font = UIConstants.FontLog,
-                Dock = DockStyle.Fill,
+            outputMessagesResults = new OutputMessagesPanel();
 
-
-            };
-
-            tableLayoutPanelMessages.Controls.Add(textBoxMessages);
+            tableLayoutPanelMessages.Controls.Add(outputMessagesResults);
 
 
             // Aba Resultados
@@ -1445,7 +1508,16 @@ namespace SQLMultiScript.UI.Forms
             }
 
             string prefix = isError ? "[ERRO]" : "[INFO]";
-            logBox.AppendText($"[{DateTime.Now:G}] {prefix} {message}{Environment.NewLine}");
+            var mesasgeFull = $"[{DateTime.Now:G}] {prefix} {message}";
+            if (isError)
+            {
+                outputMessagesLog.AppendError(mesasgeFull);
+            }
+            else
+            {
+                outputMessagesLog.AppendInfo(mesasgeFull);
+            }
+
 
             if (isError)
                 _logger.LogError(message);
@@ -1508,26 +1580,6 @@ namespace SQLMultiScript.UI.Forms
         }
 
 
-        void SelectedExecutionScriptInfoChanged()
-        {
 
-            if (SelectedExecutionScriptInfo == null)
-            {
-                dataGridViewDatabasesResults.DataSource = null;
-                dataGridViewDatabasesResults.Refresh();
-                return;
-            }
-
-            textBoxMessages.Text = string.Empty;
-
-            foreach (var databaseInfo in SelectedExecutionScriptInfo.DatabasesInfo)
-            {
-                if (databaseInfo.Response != null && !string.IsNullOrEmpty(databaseInfo.Response.MessagesText))
-                {
-                    textBoxMessages.AppendText(databaseInfo.Response.MessagesText + Environment.NewLine);
-                }
-            }
-
-        }
     }
 }

@@ -32,7 +32,17 @@ namespace SQLMultiScript.UI.Forms
             Size = new Size(width, height);
         }
 
-        
+        protected int GetPercentOfScreenWidth(decimal percent) 
+        {
+            var screenSize = Screen.PrimaryScreen.WorkingArea;
+            return (int)(screenSize.Width * percent);
+        }
+
+        protected int GetPercentOfScreenHeight(decimal percent) 
+        {
+            var screenSize = Screen.PrimaryScreen.WorkingArea;
+            return (int)(screenSize.Height * percent);
+        }
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {

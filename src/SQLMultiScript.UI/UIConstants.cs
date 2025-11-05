@@ -4,6 +4,6 @@
     {
         public static readonly Padding PanelPadding = new Padding(5);        
         
-        public static readonly Font FontLog = new Font("Consolas", 9);
+        
     }
 }
