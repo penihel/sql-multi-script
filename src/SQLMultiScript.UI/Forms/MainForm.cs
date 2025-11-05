@@ -167,7 +167,6 @@ namespace SQLMultiScript.UI.Forms
                     {
                         outputMessagesResults.AppendInfo(databaseInfo.Response.MessagesText);
                     }
-
                 }
             }
 
@@ -445,7 +444,7 @@ namespace SQLMultiScript.UI.Forms
             panelResults.Controls.Add(tabControl);
 
             // Aba Messages
-            var tabMessages = new TabPage("Mensagens");
+            var tabMessages = new TabPage(Strings.Messages);
 
             tabControl.TabPages.Add(tabMessages);
 
@@ -465,16 +464,16 @@ namespace SQLMultiScript.UI.Forms
 
 
             // Aba Resultados
-            var tabResults = new TabPage("Resultados");
+            var tabResults = new TabPage(Strings.Results);
             tabControl.TabPages.Add(tabResults);
 
-            var flowResults = new TableLayoutPanel
+            var tableLayoutPanelResultsGrid = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 AutoScroll = true
             };
 
-            tabResults.Controls.Add(flowResults);
+            tabResults.Controls.Add(tableLayoutPanelResultsGrid);
 
 
 
