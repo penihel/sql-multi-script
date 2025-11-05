@@ -22,22 +22,22 @@ namespace SQLMultiScript.UI
                     .AddConsole();
             });
 
-            // Registrar serviços
+            // Register services
             services.AddSingleton<IProjectService, ProjectService>();
             services.AddSingleton<IDatabaseDistributionListService, DatabaseDistributionListService>();
             services.AddSingleton<IConnectionService, ConnectionService>();
             services.AddSingleton<IPathService, PathService>();
             services.AddSingleton<IExecutionService, ExecutionService>();
-            
 
-            // Registrar um ILogger genérico com categoria "SQLMultiScript"
+
+            // Register ILogger
             services.AddSingleton(provider =>
             {
                 var factory = provider.GetRequiredService<ILoggerFactory>();
                 return factory.CreateLogger(Constants.ApplicationName);
             });
 
-            // Registrar Forms (agora recebem ILogger injetado)
+            // Register Forms
             services.AddTransient<MainForm>();
             services.AddTransient<DatabaseDistributionListForm>();
             services.AddTransient<NewConnectionForm>();
@@ -46,7 +46,7 @@ namespace SQLMultiScript.UI
             {
                 ApplicationConfiguration.Initialize();
 
-                // Pega o logger diretamente
+                
                 var logger = provider.GetRequiredService<ILogger>();
 
                 logger.LogInformation("Application iniciada");

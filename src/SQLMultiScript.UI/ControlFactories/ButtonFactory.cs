@@ -11,7 +11,7 @@ namespace SQLMultiScript.UI.ControlFactories
         {
             var button = new Button
             {
-                Size = UIConstants.ButtonSize,                
+                Size = new Size(50, 50),
             };
 
             if (image != null)

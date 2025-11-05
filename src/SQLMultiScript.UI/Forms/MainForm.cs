@@ -8,29 +8,30 @@ using SQLMultiScript.Resources;
 using SQLMultiScript.UI.ControlFactories;
 using System.ComponentModel;
 using System.Data;
-using System.Windows.Forms;
 
 namespace SQLMultiScript.UI.Forms
 {
     public class MainForm : BaseForm
     {
+        //constants
         private const int TopHeight = 60;
 
+        //services
         private readonly IProjectService _projectService;
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
         private readonly IExecutionService _scriptExecutorService;
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
 
+
+        //fields
         private Project _currentProject = null;
         private Script _activeScript = null;
 
-
-        private BindingList<DatabaseDistributionList> _databaseDistributionLists = new BindingList<DatabaseDistributionList>();
         private BindingList<Execution> _executions = new BindingList<Execution>();
 
 
-
+        //controls
         private DataGridView
             dataGridViewScripts,
             dataGridViewDatabases,
@@ -51,6 +52,33 @@ namespace SQLMultiScript.UI.Forms
 
 
         //Properties
+
+        #region DatabaseDistributionLists
+
+        private BindingList<DatabaseDistributionList> _databaseDistributionLists;
+
+        public BindingList<DatabaseDistributionList> DatabaseDistributionLists
+        {
+            get => _databaseDistributionLists;
+            set
+            {
+                if (SetProperty(ref _databaseDistributionLists, value))
+                {
+                    DatabaseDistributionListsChanged();
+                }
+            }
+        }
+
+        private void DatabaseDistributionListsChanged()
+        {
+            comboBoxDatabaseDistributionList.Refresh();
+            dataGridViewDatabases.Refresh();
+        }
+        #endregion
+
+
+        #region SelectedDistributionList
+
         private DatabaseDistributionList _selectedDistributionList;
 
         public DatabaseDistributionList SelectedDistributionList
@@ -75,10 +103,13 @@ namespace SQLMultiScript.UI.Forms
             }
 
             _currentProject.SelectedDistributionList = _selectedDistributionList.Name;
-
-
             dataGridViewDatabases.DataSource = _selectedDistributionList?.Databases;
+
+
+
+            dataGridViewDatabases.Refresh();
         }
+        #endregion
 
 
         private ExecutionScriptInfo _selectedExecutionScriptInfo;
@@ -521,6 +552,7 @@ namespace SQLMultiScript.UI.Forms
 
             };
 
+            comboBoxDatabaseDistributionList.SelectedIndexChanged += comboBoxDatabaseDistributionList_SelectedIndexChanged;
 
 
             topTableLayoutPanel.Controls.Add(comboBoxDatabaseDistributionList, 0, 0);
@@ -546,6 +578,11 @@ namespace SQLMultiScript.UI.Forms
 
         }
 
+        private void comboBoxDatabaseDistributionList_SelectedIndexChanged(object sender, EventArgs e)
+
+        {
+            SelectedDistributionList = comboBoxDatabaseDistributionList.SelectedItem as DatabaseDistributionList;
+        }
 
 
         private void SetupScriptsPanel(Panel parentPanel)
@@ -847,11 +884,11 @@ namespace SQLMultiScript.UI.Forms
 
                 if (!string.IsNullOrEmpty(_currentProject.SelectedDistributionList))
                 {
-                    SelectedDistributionList = _databaseDistributionLists?.FirstOrDefault(d => d.Name == _currentProject.SelectedDistributionList);
+                    SelectedDistributionList = DatabaseDistributionLists?.FirstOrDefault(d => d.Name == _currentProject.SelectedDistributionList);
                 }
                 else
                 {
-                    SelectedDistributionList = _databaseDistributionLists?.FirstOrDefault();
+                    SelectedDistributionList = DatabaseDistributionLists?.FirstOrDefault();
 
                 }
 
@@ -865,13 +902,16 @@ namespace SQLMultiScript.UI.Forms
         private void BindData()
         {
             dataGridViewScripts.DataSource = _currentProject.Scripts;
-            comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
+
+
+            comboBoxDatabaseDistributionList.DataSource = DatabaseDistributionLists;
             comboBoxDatabaseDistributionList.DisplayMember = "Name";
             comboBoxDatabaseDistributionList.ValueMember = "Name";
             comboBoxDatabaseDistributionList.DataBindings.Add("SelectedItem", this, nameof(SelectedDistributionList), true, DataSourceUpdateMode.OnPropertyChanged);
 
-            // Atualiza grid
+            // Refresh grids
             dataGridViewScripts.Refresh();
+
         }
 
         private void ShowScriptOnEditor(Script script)
@@ -1009,7 +1049,7 @@ namespace SQLMultiScript.UI.Forms
         private async Task LoadDistribuitionListsAsync()
         {
 
-            _databaseDistributionLists =
+            DatabaseDistributionLists =
                 new BindingList<DatabaseDistributionList>(await _databaseDistributionListService.ListAsync());
 
 

@@ -43,7 +43,7 @@
                 Dock = DockStyle.Fill,
                 Height = 1,
                 BackColor = Color.LightGray,
-                Margin = UIConstants.DividerMargin,
+                Margin = new Padding(5, 10, 5, 5),
             };
 
 
