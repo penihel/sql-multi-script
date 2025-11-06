@@ -63,6 +63,8 @@ namespace SQLMultiScript.UI.Forms
         private ImageList imageListResults;
 
 
+        private TableLayoutPanel tableLayoutPanelResultsGrid;
+
         // -----------------------
         // Properties
         // -----------------------
@@ -155,23 +157,65 @@ namespace SQLMultiScript.UI.Forms
 
             outputMessagesResults.ClearMessages();
 
+            DataSet dataSet = null;
+
+            
             foreach (var databaseInfo in SelectedExecutionScriptInfo.DatabasesInfo)
             {
-                if (databaseInfo.Response != null && !string.IsNullOrEmpty(databaseInfo.Response.MessagesText))
+                if (databaseInfo.Response != null)
                 {
-                    if (databaseInfo.Status == ExecutionStatus.Error)
+                    if (!string.IsNullOrEmpty(databaseInfo.Response.MessagesText))
                     {
-                        outputMessagesResults.AppendError(databaseInfo.Response.MessagesText);
+                        if (databaseInfo.Status == ExecutionStatus.Error)
+                        {
+                            outputMessagesResults.AppendError(databaseInfo.Response.MessagesText);
+                        }
+                        else
+                        {
+                            outputMessagesResults.AppendInfo(databaseInfo.Response.MessagesText);
+                        }
                     }
+
+                    if (dataSet == null && databaseInfo.Response.DataSet != null)
+                        dataSet = databaseInfo.Response.DataSet;
                     else
                     {
-                        outputMessagesResults.AppendInfo(databaseInfo.Response.MessagesText);
+                        // Merge datasets
+                        if (databaseInfo.Response.DataSet != null)
+                        {
+                            foreach (DataTable table in databaseInfo.Response.DataSet.Tables)
+                            {
+                                if (!dataSet.Tables.Contains(table.TableName))
+                                {
+                                    dataSet.Tables.Add(table.Copy());
+                                }
+                                else
+                                {
+                                    dataSet.Tables[table.TableName].Merge(table);
+                                }
+                            }
+                        }
                     }
                 }
             }
 
+            if (dataSet != null)
+            {
+                foreach (DataTable table in dataSet.Tables)
+                {
+                    var grid = new DataGridView
+                    {
+                        Dock = DockStyle.Top,
+                        AutoGenerateColumns = true,
+                        Height = 200,
+                        DataSource = table
+                    };
+                    var label = LabelFactory.Create(table.TableName, DockStyle.Top);
+                    tableLayoutPanelResultsGrid.Controls.Add(grid);
+                    tableLayoutPanelResultsGrid.Controls.Add(label);
+                }
+            }
 
-            
 
         }
 
@@ -413,7 +457,7 @@ namespace SQLMultiScript.UI.Forms
             var colName = new DataGridViewTextBoxColumn
             {
                 DataPropertyName = "DatabaseName",
-                HeaderText = Strings.DatabasesToExecute,
+                HeaderText = Strings.ExecutedDatabases,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 ReadOnly = true
             };
@@ -467,7 +511,7 @@ namespace SQLMultiScript.UI.Forms
             var tabResults = new TabPage(Strings.Results);
             tabControl.TabPages.Add(tabResults);
 
-            var tableLayoutPanelResultsGrid = new TableLayoutPanel
+            tableLayoutPanelResultsGrid = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 AutoScroll = true

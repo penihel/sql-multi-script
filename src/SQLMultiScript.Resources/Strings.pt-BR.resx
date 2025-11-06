@@ -207,4 +207,7 @@
   <data name="Results" xml:space="preserve">
     <value>Resultados</value>
   </data>
+  <data name="ExecutedDatabases" xml:space="preserve">
+    <value>Banco de dados executados</value>
+  </data>
 </root>
