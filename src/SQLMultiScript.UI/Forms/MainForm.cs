@@ -24,7 +24,7 @@ namespace SQLMultiScript.UI.Forms
         // -----------------------
         private readonly IProjectService _projectService;
         private readonly IDatabaseDistributionListService _databaseDistributionListService;
-        private readonly IExecutionService _scriptExecutorService;
+        private readonly IExecutionService _executionService;
         private readonly ILogger _logger;
         private readonly IServiceProvider _serviceProvider;
 
@@ -254,21 +254,37 @@ namespace SQLMultiScript.UI.Forms
         /// <param name="projectService"></param>
         /// <param name="databaseDistributionListService"></param>
         /// <param name="serviceProvider"></param>
-        /// <param name="scriptExecutorService"></param>
+        /// <param name="executionService"></param>
         public MainForm(
             ILogger logger,
             IProjectService projectService,
             IDatabaseDistributionListService databaseDistributionListService,
             IServiceProvider serviceProvider,
-            IExecutionService scriptExecutorService)
+            IExecutionService executionService)
         {
             _logger = logger;
             _projectService = projectService;
             _databaseDistributionListService = databaseDistributionListService;
             _serviceProvider = serviceProvider;
-            _scriptExecutorService = scriptExecutorService;
+            _executionService = executionService;
+
+            BindEvents();
 
             InitializeLayout();
+        }
+
+
+        private void BindEvents()
+        {
+            _executionService.InfoMessageRecived += _executionService_InfoMessageRecived;
+            _executionService.Log += Log;
+        }
+
+        
+
+        private void _executionService_InfoMessageRecived(Execution execution, ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo, string message)
+        {
+            outputMessagesResults.AppendInfo(message);
         }
 
         /// <summary>
@@ -1466,7 +1482,7 @@ namespace SQLMultiScript.UI.Forms
 
 
 
-                await _scriptExecutorService.LoadConnectionsAsync();
+                await _executionService.LoadConnectionsAsync();
 
 
 
@@ -1478,7 +1494,7 @@ namespace SQLMultiScript.UI.Forms
 
                 //UpdateExecutionStatus(execution, null, null);
 
-                await _scriptExecutorService.ExecuteAsync(execution, new Progress<ExecutionProgress>(p => UpdateExecutionStatus(p)));
+                await _executionService.ExecuteAsync(execution, new Progress<ExecutionProgress>(p => UpdateExecutionStatus(p)));
 
 
 
@@ -1568,7 +1584,11 @@ namespace SQLMultiScript.UI.Forms
             return execution;
         }
 
-        private void Log(string message, bool isError = false)
+        private void Log(string message)
+        {
+            Log(message, false);
+        }
+        private void Log(string message, bool isError)
         {
             if (InvokeRequired)
             {
@@ -1601,7 +1621,7 @@ namespace SQLMultiScript.UI.Forms
 
             var execution = executionProgress.Execution;
             var scriptInfo = executionProgress.ScriptInfo;
-
+            var databaseInfo = executionProgress.DatabaseInfo;
 
             // Atualiza a TreeView
             var executionNode = treeViewExecutions.Nodes
@@ -1611,6 +1631,9 @@ namespace SQLMultiScript.UI.Forms
 
             if (executionNode != null)
             {
+                if (scriptInfo == null)
+                    Log($"{execution.Name} => {execution.Status}");
+
                 // Atualiza o nó do script
                 if (scriptInfo != null)
                 {
@@ -1624,10 +1647,11 @@ namespace SQLMultiScript.UI.Forms
                         scriptNode.ImageKey = scriptInfo.Status.ToString();
                         scriptNode.SelectedImageKey = scriptInfo.Status.ToString();
 
-
-
+                        if (databaseInfo == null)
+                            Log($"{execution.Name} - {scriptInfo.Script.Name} => {scriptInfo.Status}");
                     }
                 }
+
 
                 // Atualiza o status geral da execução
                 executionNode.Text = $"{execution.Name} - {execution.Status}";

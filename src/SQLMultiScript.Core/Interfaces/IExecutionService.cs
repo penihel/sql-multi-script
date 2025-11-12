@@ -8,11 +8,12 @@ namespace SQLMultiScript.Core.Interfaces
         Task LoadConnectionsAsync();
         Task ExecuteAsync(Execution execution, IProgress<ExecutionProgress> progress);
 
-        event Action<Execution, ExecutionScriptInfo, Database, string> InfoMessageRecived;
-        event Action<Execution, ExecutionScriptInfo, Database, DataTable, DataRow> RowAdded;
-        event Action<Execution, ExecutionScriptInfo, Database, DataTable> ResultSetCompleted;
-        event Action<Execution, ExecutionScriptInfo, Database, int> BatchCompleted;
-        event Action<Execution, ExecutionScriptInfo, Database, Exception> ErrorOccurred;
+        event Action<string> Log;
+        event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, string> InfoMessageRecived;
+        event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, DataTable, DataRow> RowAdded;
+        event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, DataTable> ResultSetCompleted;
+        event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, int> BatchCompleted;
+        event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, Exception> ErrorOccurred;
     }
 
 }

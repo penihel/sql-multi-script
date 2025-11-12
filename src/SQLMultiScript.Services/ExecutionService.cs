@@ -9,25 +9,25 @@ namespace SQLMultiScript.Services
 {
     public class ExecutionService : IExecutionService
     {
-
-        public event Action<Execution, ExecutionScriptInfo, Database, string> InfoMessageRecived;
-        public event Action<Execution, ExecutionScriptInfo, Database, DataTable, DataRow> RowAdded;
-        public event Action<Execution, ExecutionScriptInfo, Database, DataTable> ResultSetCompleted;
-        public event Action<Execution, ExecutionScriptInfo, Database, int> BatchCompleted;
-        public event Action<Execution, ExecutionScriptInfo, Database, Exception> ErrorOccurred;
+        public event Action<string> Log;
+        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, string> InfoMessageRecived;
+        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, DataTable, DataRow> RowAdded;
+        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, DataTable> ResultSetCompleted;
+        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, int> BatchCompleted;
+        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, Exception> ErrorOccurred;
 
 
         private readonly IConnectionService _connectionService;
-        private readonly ILogger _logger;
+        
         private readonly int _commandTimeoutSeconds;
 
         private ICollection<Connection> _connections;
-        public ExecutionService(IConnectionService connectionService, ILogger logger, int commandTimeoutSeconds = 600)
+        public ExecutionService(IConnectionService connectionService, int commandTimeoutSeconds = 60000)
         {
 
             _commandTimeoutSeconds = commandTimeoutSeconds;
             _connectionService = connectionService;
-            _logger = logger;
+            
         }
 
         public async Task LoadConnectionsAsync()
@@ -66,19 +66,19 @@ namespace SQLMultiScript.Services
 
                         await semaphore.WaitAsync();
 
-                        var db = databaseInfo.Database;
+
 
                         try
                         {
 
                             databaseInfo.Status = ExecutionStatus.Executing;
 
-                            
+
                             progress?.Report(new ExecutionProgress(execution, scriptInfo, databaseInfo));
 
 
 
-                            var scriptResponse = await InternalExecuteAsync(db, scriptInfo);
+                            var scriptResponse = await InternalExecuteAsync(execution, scriptInfo, databaseInfo);
 
 
                             if (scriptResponse.Success)
@@ -98,7 +98,7 @@ namespace SQLMultiScript.Services
                         {
                             scriptInfo.Status = ExecutionStatus.Error;
 
-                            _logger.LogError($"Erro ao executar script '{scriptInfo.Script.Name}' no banco '{db.DatabaseName}': {exScript.Message}");
+                            //_logger.LogError($"Erro ao executar script '{scriptInfo.Script.Name}' no banco '{databaseInfo.Database.DatabaseName}': {exScript.Message}");
                         }
                         finally
                         {
@@ -114,12 +114,12 @@ namespace SQLMultiScript.Services
 
                 await Task.WhenAll(tasks);
 
-                //UPDATE ScriptInfo
+
                 var scriptInfoError = scriptInfo.DatabasesInfo.Any(di => di.Status == ExecutionStatus.Error);
 
                 scriptInfo.Status = scriptInfoError ? ExecutionStatus.Error : ExecutionStatus.Success;
 
-                
+
                 progress?.Report(new ExecutionProgress(execution, scriptInfo, null));
 
             }
@@ -129,19 +129,24 @@ namespace SQLMultiScript.Services
 
             execution.Status = executionError ? ExecutionStatus.Error : ExecutionStatus.Success;
 
-            
+
             progress?.Report(new ExecutionProgress(execution, null, null));
 
         }
-        private async Task<ExecutionDatabaseResponse> InternalExecuteAsync(Database database, ExecutionScriptInfo scriptInfo)
+        private async Task<ExecutionDatabaseResponse> InternalExecuteAsync(Execution execution, ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)//;;,Database database, ExecutionScriptInfo scriptInfo)
         {
             var scriptResponse = new ExecutionDatabaseResponse();
 
+            var database = databaseInfo.Database;
+
             var connectionModel = _connections.FirstOrDefault(c => c.Name == database.ConnectionName)
+
                 ?? throw new Exception("connection notfound");
 
             var script = scriptInfo.Script;
+
             string content = script.Content ?? await File.ReadAllTextAsync(script.FilePath);
+
             string connectionString = _connectionService.BuildConnectionString(connectionModel, database.DatabaseName);
 
             if (string.IsNullOrWhiteSpace(connectionString))
@@ -150,19 +155,29 @@ namespace SQLMultiScript.Services
                 throw new ArgumentException("script não pode ser vazio.", nameof(script));
 
 
-
+            
 
             var batches = SplitBatches(content).ToList();
 
-            _logger.LogInformation($"Executando script em {HiddenConnectionInfo(connectionString)}. Batches: {batches.Count}");
+
+            //Log($"{script.Name}|{databaseConnectionInfo} => Batches: {batches.Count}");
 
             await using var sqlConnection = new SqlConnection(connectionString);
+
             sqlConnection.InfoMessage += (s, e) =>
             {
+                e.Errors.Cast<SqlError>().ToList().ForEach(err =>
+                {
+                    scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {err.Message}");
+                });
+
                 scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {e.Message}");
             };
 
             await sqlConnection.OpenAsync();
+
+            
+            RaiseLog(script, connectionString, "Connection Opened");
 
             using var transaction = sqlConnection.BeginTransaction();
 
@@ -174,7 +189,8 @@ namespace SQLMultiScript.Services
                     if (string.IsNullOrWhiteSpace(batch))
                         continue;
 
-                    _logger.LogInformation($"Executando batch {i + 1}/{batches.Count} (tamanho: {batch.Length} chars)");
+
+                    //Log($"{script.Name}|{databaseConnectionInfo}|batch {i + 1}/{batches.Count} => Executing batch");
 
                     await using var cmd = sqlConnection.CreateCommand();
                     cmd.UpdatedRowSource = UpdateRowSource.None;
@@ -261,11 +277,11 @@ namespace SQLMultiScript.Services
                 transaction.Commit();
                 scriptResponse.Success = true;
 
-                _logger.LogInformation($"Script executado com sucesso em {HiddenConnectionInfo(connectionString)}. {scriptInfo.DataSet.Tables.Count} resultados obtidos.");
+                //_logger.LogInformation($"Script executado com sucesso em {GetDatabaseConnectionInfo(connectionString)}. {scriptInfo.DataSet.Tables.Count} resultados obtidos.");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Erro ao executar script em {HiddenConnectionInfo(connectionString)}. Fazendo rollback.\n{ex.Message}");
+                //_logger.LogError($"Erro ao executar script em {GetDatabaseConnectionInfo(connectionString)}. Fazendo rollback.\n{ex.Message}");
                 scriptResponse.Success = false;
 
                 while (ex != null)
@@ -280,7 +296,7 @@ namespace SQLMultiScript.Services
                 }
                 catch (Exception rbEx)
                 {
-                    _logger.LogError(rbEx, rbEx.Message);
+                    //_logger.LogError(rbEx, rbEx.Message);
                     throw;
                 }
             }
@@ -298,12 +314,21 @@ namespace SQLMultiScript.Services
             return parts.Select(p => p.Trim()).Where(p => !string.IsNullOrWhiteSpace(p));
         }
 
-        private static string HiddenConnectionInfo(string connectionString)
+        private void RaiseLog(Script script, string connectionString, string message)
+        {
+            var logPrefix = GetLogPrefix(script, connectionString);
+
+            Log($"{logPrefix} {message}");
+
+        }
+        private static string GetLogPrefix(Script script, string connectionString)
         {
             try
             {
                 var builder = new SqlConnectionStringBuilder(connectionString);
-                return $"{builder.DataSource}/{builder.InitialCatalog}";
+                var db = $"{builder.DataSource}.{builder.InitialCatalog}";
+
+                return $"[{script.Name}] [{db}]";
             }
             catch
             {
