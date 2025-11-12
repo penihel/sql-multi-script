@@ -19,7 +19,7 @@ namespace SQLMultiScript.Core.Models
 
         public BindingList<ExecutionDatabaseInfo> DatabasesInfo { get; set; } = new BindingList<ExecutionDatabaseInfo>();
 
-
+        public DataSet DataSet { get; set; }
     }
 
     public class ExecutionDatabaseInfo
@@ -49,7 +49,7 @@ namespace SQLMultiScript.Core.Models
     public class ExecutionDatabaseResponse
     {
         public bool Success { get; set; }
-        public DataSet DataSet { get; set; }
+        //public DataSet DataSet { get; set; }
         public List<string> Messages { get; set; } = new();
         public string MessagesText => string.Join(Environment.NewLine, Messages);
     }
@@ -59,5 +59,20 @@ namespace SQLMultiScript.Core.Models
         Executing,
         Error,
         Success,
+    }
+
+    public class ExecutionProgress
+    {
+        public ExecutionProgress(Execution execution, ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)
+        {
+            Execution = execution;
+            ScriptInfo = scriptInfo;
+            DatabaseInfo = databaseInfo;
+        }
+        public Execution Execution { get; set; }
+        
+        public ExecutionScriptInfo ScriptInfo { get; set; }
+
+        public ExecutionDatabaseInfo DatabaseInfo { get; set; }
     }
 }

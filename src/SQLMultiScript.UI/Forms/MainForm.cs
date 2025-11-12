@@ -9,7 +9,6 @@ using SQLMultiScript.UI.ControlFactories;
 using SQLMultiScript.UI.UserControls;
 using System.ComponentModel;
 using System.Data;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace SQLMultiScript.UI.Forms
 {
@@ -140,6 +139,8 @@ namespace SQLMultiScript.UI.Forms
             {
                 if (SetProperty(ref _selectedExecutionScriptInfo, value))
                 {
+
+
                     SelectedExecutionScriptInfoChanged();
                 }
             }
@@ -157,9 +158,9 @@ namespace SQLMultiScript.UI.Forms
 
             outputMessagesResults.ClearMessages();
 
-            DataSet dataSet = null;
 
-            
+
+
             foreach (var databaseInfo in SelectedExecutionScriptInfo.DatabasesInfo)
             {
                 if (databaseInfo.Response != null)
@@ -176,47 +177,71 @@ namespace SQLMultiScript.UI.Forms
                         }
                     }
 
-                    if (dataSet == null && databaseInfo.Response.DataSet != null)
-                        dataSet = databaseInfo.Response.DataSet;
-                    else
-                    {
-                        // Merge datasets
-                        if (databaseInfo.Response.DataSet != null)
-                        {
-                            foreach (DataTable table in databaseInfo.Response.DataSet.Tables)
-                            {
-                                if (!dataSet.Tables.Contains(table.TableName))
-                                {
-                                    dataSet.Tables.Add(table.Copy());
-                                }
-                                else
-                                {
-                                    dataSet.Tables[table.TableName].Merge(table);
-                                }
-                            }
-                        }
-                    }
+
                 }
             }
 
-            if (dataSet != null)
+            CreateDataGridViewWithScriptResults();
+
+
+
+
+
+
+        }
+
+        private void CreateDataGridViewWithScriptResults()
+        {
+
+            tableLayoutPanelResultsGrid.Controls.Clear();
+
+            if (SelectedExecutionScriptInfo.DataSet != null &&
+                SelectedExecutionScriptInfo.DataSet.Tables.Count > 0)
             {
-                foreach (DataTable table in dataSet.Tables)
+                var tabControl = new TabControl { Dock = DockStyle.Fill };
+
+                foreach (DataTable table in SelectedExecutionScriptInfo.DataSet.Tables)
                 {
+
+
+
+                    tableLayoutPanelResultsGrid.Controls.Add(tabControl);
+
+                    // Aba Messages
+                    var tabResult = new TabPage(table.TableName);
+
+                    tabControl.TabPages.Add(tabResult);
+
+
+                    //var grid = new DataGridView
+                    //{
+                    //    Dock = DockStyle.Top,
+                    //    AutoGenerateColumns = true,
+                    //    Height = 200,
+                    //    DataSource = table
+                    //};
                     var grid = new DataGridView
                     {
-                        Dock = DockStyle.Top,
+                        Dock = DockStyle.Fill,
                         AutoGenerateColumns = true,
-                        Height = 200,
+                        //RowHeadersVisible = false,
+                        ColumnHeadersVisible = true,
+                        AllowUserToAddRows = false,
+                        AllowUserToDeleteRows = false,
+                        AllowDrop = false,
+                        AllowUserToOrderColumns = false,
+                        AllowUserToResizeColumns = false,
+                        AllowUserToResizeRows = false,
+                        //SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                        BackgroundColor = Color.White,
+                        BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D,
                         DataSource = table
                     };
-                    var label = LabelFactory.Create(table.TableName, DockStyle.Top);
-                    tableLayoutPanelResultsGrid.Controls.Add(grid);
-                    tableLayoutPanelResultsGrid.Controls.Add(label);
+
+                    tabResult.Controls.Add(grid);
+
                 }
             }
-
-
         }
 
         #endregion
@@ -544,7 +569,7 @@ namespace SQLMultiScript.UI.Forms
             dataGridViewDatabasesResults.Refresh();
 
 
-            SelectedExecutionScriptInfoChanged();
+            //SelectedExecutionScriptInfoChanged();
 
 
         }
@@ -1451,9 +1476,9 @@ namespace SQLMultiScript.UI.Forms
 
                 //treeViewExecutions.Enabled = false;
 
-                UpdateExecutionStatus(execution, null, null);
+                //UpdateExecutionStatus(execution, null, null);
 
-                await _scriptExecutorService.ExecuteAsync(execution, UpdateExecutionStatus);
+                await _scriptExecutorService.ExecuteAsync(execution, new Progress<ExecutionProgress>(p => UpdateExecutionStatus(p)));
 
 
 
@@ -1528,6 +1553,7 @@ namespace SQLMultiScript.UI.Forms
                 ScriptsInfo = new BindingList<ExecutionScriptInfo>(selectedScripts.Select(s => new ExecutionScriptInfo
                 {
                     Script = s,
+                    DataSet = new DataSet(),
                     Status = ExecutionStatus.Queued,
                     DatabasesInfo = new BindingList<ExecutionDatabaseInfo>(selectedDatabases.Select(d => new ExecutionDatabaseInfo
                     {
@@ -1569,14 +1595,12 @@ namespace SQLMultiScript.UI.Forms
         }
 
 
-        void UpdateExecutionStatus(Execution execution, ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)
+        void UpdateExecutionStatus(ExecutionProgress executionProgress)
         {
-            if (InvokeRequired)
-            {
-                BeginInvoke(new Action(() => UpdateExecutionStatus(execution, scriptInfo, databaseInfo)));
-                return;
-            }
 
+
+            var execution = executionProgress.Execution;
+            var scriptInfo = executionProgress.ScriptInfo;
 
 
             // Atualiza a TreeView
@@ -1603,9 +1627,6 @@ namespace SQLMultiScript.UI.Forms
 
 
                     }
-
-                    SelectedExecutionScriptInfoChanged();
-
                 }
 
                 // Atualiza o status geral da execução
