@@ -14,6 +14,7 @@ namespace SQLMultiScript.Core.Models
 
     public class ExecutionScriptInfo
     {
+        public Execution Execution { get; set; }
         public Script Script { get; set; }
         public ExecutionStatus Status { get; set; }
 
@@ -63,13 +64,17 @@ namespace SQLMultiScript.Core.Models
 
     public class ExecutionProgress
     {
-        public ExecutionProgress(Execution execution, ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)
+        public ExecutionProgress()
         {
-            Execution = execution;
+            
+        }
+        public ExecutionProgress(/*Execution execution,*/ ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)
+        {
+            //Execution = execution;
             ScriptInfo = scriptInfo;
             DatabaseInfo = databaseInfo;
         }
-        public Execution Execution { get; set; }
+        //public Execution Execution { get; set; }
         
         public ExecutionScriptInfo ScriptInfo { get; set; }
 

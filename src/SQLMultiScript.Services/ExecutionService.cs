@@ -1,5 +1,4 @@
 ﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using System.Data;
@@ -9,16 +8,18 @@ namespace SQLMultiScript.Services
 {
     public class ExecutionService : IExecutionService
     {
+        public SynchronizationContext UiContext { get; set; }
+
         public event Action<string> Log;
-        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, string> InfoMessageRecived;
-        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, DataTable, DataRow> RowAdded;
-        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, DataTable> ResultSetCompleted;
-        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, int> BatchCompleted;
-        public event Action<Execution, ExecutionScriptInfo, ExecutionDatabaseInfo, Exception> ErrorOccurred;
+        public event Action<ExecutionScriptInfo, ExecutionDatabaseInfo, string> InfoMessageRecived;
+        public event Action<ExecutionScriptInfo, ExecutionDatabaseInfo, DataTable, DataRow> RowAdded;
+        public event Action<ExecutionScriptInfo, ExecutionDatabaseInfo, DataTable> TableAdded;
+        public event Action<ExecutionScriptInfo, ExecutionDatabaseInfo, int> BatchCompleted;
+        public event Action<ExecutionScriptInfo, ExecutionDatabaseInfo, Exception> ErrorOccurred;
 
 
         private readonly IConnectionService _connectionService;
-        
+
         private readonly int _commandTimeoutSeconds;
 
         private ICollection<Connection> _connections;
@@ -28,112 +29,131 @@ namespace SQLMultiScript.Services
             _commandTimeoutSeconds = commandTimeoutSeconds;
             _connectionService = connectionService;
             
+
         }
 
-        public async Task LoadConnectionsAsync()
+        public async Task OpenConnectionsAsync(IEnumerable<Database> databases)
         {
             _connections = await _connectionService.ListAsync();
-        }
 
-        public async Task ExecuteAsync(Execution execution, IProgress<ExecutionProgress> progress)
-        {
-
-            // Semaphore para limitar o número de execuções simultâneas
-            using var semaphore = new SemaphoreSlim(1); // 5 threads paralelas
+            RaiseOnUI(() => Log?.Invoke("Opening connections to databases..."));
 
 
-            execution.Status = ExecutionStatus.Executing;
-
-            progress?.Report(new ExecutionProgress(execution, null, null));
-
-
-            foreach (var scriptInfo in execution.ScriptsInfo)
+            foreach (var database in databases)
             {
-
-                scriptInfo.Status = ExecutionStatus.Executing;
-
-                progress?.Report(new ExecutionProgress(execution, scriptInfo, null));
-
-                var tasks = new List<Task>();
-
-
-                foreach (var databaseInfo in scriptInfo.DatabasesInfo)
+                try
                 {
+                    var connection = _connections.FirstOrDefault(c => c.Name == database.ConnectionName)
+                    ?? throw new Exception($"Connection '{database.ConnectionName}' not found.");
 
+                    string connectionString = _connectionService.BuildConnectionString(connection, database.DatabaseName);
 
-                    tasks.Add(Task.Run(async () =>
-                    {
+                    await using var sqlConnection = new SqlConnection(connectionString);
 
-                        await semaphore.WaitAsync();
+                    RaiseOnUI(() => Log?.Invoke($"Connecting to {database.DatabaseName}"));
 
+                    await sqlConnection.OpenAsync();
 
-
-                        try
-                        {
-
-                            databaseInfo.Status = ExecutionStatus.Executing;
-
-
-                            progress?.Report(new ExecutionProgress(execution, scriptInfo, databaseInfo));
-
-
-
-                            var scriptResponse = await InternalExecuteAsync(execution, scriptInfo, databaseInfo);
-
-
-                            if (scriptResponse.Success)
-                            {
-                                databaseInfo.Status = ExecutionStatus.Success;
-                            }
-                            else
-                            {
-                                databaseInfo.Status = ExecutionStatus.Error;
-                            }
-
-
-                            databaseInfo.Response = scriptResponse;
-
-                        }
-                        catch (Exception exScript)
-                        {
-                            scriptInfo.Status = ExecutionStatus.Error;
-
-                            //_logger.LogError($"Erro ao executar script '{scriptInfo.Script.Name}' no banco '{databaseInfo.Database.DatabaseName}': {exScript.Message}");
-                        }
-                        finally
-                        {
-                            progress?.Report(new ExecutionProgress(execution, scriptInfo, databaseInfo));
-
-                            semaphore.Release();
-                        }
-                    }));
-
-
-
+                    await sqlConnection.CloseAsync();
                 }
-
-                await Task.WhenAll(tasks);
-
-
-                var scriptInfoError = scriptInfo.DatabasesInfo.Any(di => di.Status == ExecutionStatus.Error);
-
-                scriptInfo.Status = scriptInfoError ? ExecutionStatus.Error : ExecutionStatus.Success;
-
-
-                progress?.Report(new ExecutionProgress(execution, scriptInfo, null));
+                catch (Exception ex)
+                {
+                    RaiseOnUI(() => Log?.Invoke(ex.Message));
+                    throw;
+                }
 
             }
 
 
-            var executionError = execution.ScriptsInfo.Any(si => si.Status == ExecutionStatus.Error);
+        }
 
-            execution.Status = executionError ? ExecutionStatus.Error : ExecutionStatus.Success;
+        public async Task ExecuteAsync(ExecutionScriptInfo scriptInfo, IProgress<ExecutionProgress> progress)
+        {
+            // Semaphore para limitar o número de execuções simultâneas
+            using var semaphore = new SemaphoreSlim(3); // 5 threads paralelas
+
+            scriptInfo.Status = ExecutionStatus.Executing;
+
+            progress?.Report(new ExecutionProgress(scriptInfo, null));
+
+            var tasks = new List<Task>();
 
 
-            progress?.Report(new ExecutionProgress(execution, null, null));
+            foreach (var databaseInfo in scriptInfo.DatabasesInfo)
+            {
+
+
+                tasks.Add(Task.Run(async () =>
+                {
+
+                    await semaphore.WaitAsync();
+
+
+
+                    try
+                    {
+
+                        databaseInfo.Status = ExecutionStatus.Executing;
+
+
+                        progress?.Report(new ExecutionProgress(scriptInfo, databaseInfo));
+
+
+
+                        var scriptResponse = await InternalExecuteAsync(scriptInfo, databaseInfo);
+
+
+                        if (scriptResponse.Success)
+                        {
+                            databaseInfo.Status = ExecutionStatus.Success;
+                        }
+                        else
+                        {
+                            databaseInfo.Status = ExecutionStatus.Error;
+                        }
+
+
+                        databaseInfo.Response = scriptResponse;
+
+                    }
+                    catch (Exception exScript)
+                    {
+                        scriptInfo.Status = ExecutionStatus.Error;
+                        databaseInfo.Status = ExecutionStatus.Error;
+                        databaseInfo.Response = new ExecutionDatabaseResponse
+                        {
+                            Success = false,
+                            Messages = new List<string> { exScript.Message }
+                        };
+
+                        RaiseOnUI(() => ErrorOccurred?.Invoke(scriptInfo, databaseInfo, exScript));
+
+
+                    }
+                    finally
+                    {
+                        progress?.Report(new ExecutionProgress(scriptInfo, databaseInfo));
+
+                        semaphore.Release();
+                    }
+                }));
+
+
+
+            }
+
+            await Task.WhenAll(tasks);
+
+
+            var scriptInfoError = scriptInfo.DatabasesInfo.Any(di => di.Status == ExecutionStatus.Error);
+
+            scriptInfo.Status = scriptInfoError ? ExecutionStatus.Error : ExecutionStatus.Success;
+
+
+            progress?.Report(new ExecutionProgress(scriptInfo, null));
 
         }
-        private async Task<ExecutionDatabaseResponse> InternalExecuteAsync(Execution execution, ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)//;;,Database database, ExecutionScriptInfo scriptInfo)
+        private async Task<ExecutionDatabaseResponse> InternalExecuteAsync(ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)//;;,Database database, ExecutionScriptInfo scriptInfo)
         {
             var scriptResponse = new ExecutionDatabaseResponse();
 
@@ -155,7 +175,7 @@ namespace SQLMultiScript.Services
                 throw new ArgumentException("script não pode ser vazio.", nameof(script));
 
 
-            
+
 
             var batches = SplitBatches(content).ToList();
 
@@ -176,7 +196,7 @@ namespace SQLMultiScript.Services
 
             await sqlConnection.OpenAsync();
 
-            
+
             RaiseLog(script, connectionString, "Connection Opened");
 
             using var transaction = sqlConnection.BeginTransaction();
@@ -209,39 +229,55 @@ namespace SQLMultiScript.Services
 
                     do
                     {
-                        // Cria uma nova tabela para cada resultset
-                        var tableName = $"Batch{i + 1}_Result{++resultIndex}";
-
-
-                        var table = scriptInfo.DataSet.Tables[tableName];
-
                         // Obtém o schema antes de começar a ler
                         var schema = reader.GetColumnSchema();
 
-                        if (table == null)
+                        // Cria uma nova tabela para cada resultset
+                        var tableName = $"Batch{i + 1}_Result{++resultIndex}";
+
+                        DataTable table;
+
+                        lock (scriptInfo.DataSet)
                         {
-                            table = new DataTable(tableName);
-
-                            table.Columns.Add("DatabaseName", typeof(string));
-                            table.Columns.Add("ConnectionName", typeof(string));
 
 
-                            for (int c = 0; c < schema.Count; c++)
+
+                            table = scriptInfo.DataSet.Tables[tableName];
+
+
+
+                            if (table == null)
                             {
-                                var col = schema[c];
-                                var colName = string.IsNullOrWhiteSpace(col.ColumnName)
-                                    ? $"Column{c + 1}"
-                                    : col.ColumnName;
+                                table = new DataTable(tableName);
 
-                                // evita colunas duplicadas
-                                if (table.Columns.Contains(colName))
-                                    colName = $"{colName}_{c + 1}";
+                                table.Columns.Add("DatabaseName", typeof(string));
+                                table.Columns.Add("ConnectionName", typeof(string));
 
-                                table.Columns.Add(colName, col.DataType ?? typeof(string));
+
+                                for (int c = 0; c < schema.Count; c++)
+                                {
+                                    var col = schema[c];
+                                    var colName = string.IsNullOrWhiteSpace(col.ColumnName)
+                                        ? $"Column{c + 1}"
+                                        : col.ColumnName;
+
+                                    // evita colunas duplicadas
+                                    if (table.Columns.Contains(colName))
+                                        colName = $"{colName}_{c + 1}";
+
+                                    table.Columns.Add(colName, col.DataType ?? typeof(string));
+                                }
+
+                                scriptInfo.DataSet.Tables.Add(table);
+
+
+                                RaiseOnUI(() => TableAdded?.Invoke(scriptInfo, databaseInfo, table));
+
                             }
-
-                            scriptInfo.DataSet.Tables.Add(table);
                         }
+
+
+
 
 
 
@@ -264,6 +300,8 @@ namespace SQLMultiScript.Services
                             }
 
                             table.Rows.Add(row);
+
+                            RaiseOnUI(() => RowAdded?.Invoke(scriptInfo, databaseInfo, table, row));
 
                             // Aqui a UI pode ser notificada (ex: evento, INotifyCollectionChanged, etc)
                             // Se você estiver em WPF/WinForms e o DataGrid estiver ligado ao DataSet,
@@ -318,7 +356,7 @@ namespace SQLMultiScript.Services
         {
             var logPrefix = GetLogPrefix(script, connectionString);
 
-            Log($"{logPrefix} {message}");
+            RaiseOnUI(() => Log?.Invoke($"{logPrefix} {message}"));
 
         }
         private static string GetLogPrefix(Script script, string connectionString)
@@ -336,7 +374,13 @@ namespace SQLMultiScript.Services
             }
         }
 
-
+        private void RaiseOnUI(Action action)
+        {
+            if (UiContext == null)
+                action();
+            else
+                UiContext.Post(_ => action(), null);
+        }
     }
 
 }

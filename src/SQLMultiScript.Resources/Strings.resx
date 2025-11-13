@@ -204,9 +204,6 @@
   <data name="Messages" xml:space="preserve">
     <value>Messages</value>
   </data>
-  <data name="Results" xml:space="preserve">
-    <value>Results</value>
-  </data>
   <data name="ExecutedDatabases" xml:space="preserve">
     <value>Executed Databases</value>
   </data>
