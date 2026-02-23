@@ -507,13 +507,8 @@ namespace SQLMultiScript.UI.Forms
                 BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D,
             };
 
-            // Checkbox
-            var colSelected = new DataGridViewCheckBoxColumn
-            {
-                DataPropertyName = nameof(Database.Selected),
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-            };
-            dataGridViewDatabasesResults.Columns.Add(colSelected);
+            // Checkbox with select-all header
+            dataGridViewDatabasesResults.AddCheckBoxColumnWithSelectAll(nameof(Database.Selected));
 
             // Database name column
             var colStatus = new DataGridViewImageColumn
@@ -643,13 +638,8 @@ namespace SQLMultiScript.UI.Forms
                 BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D,
             };
 
-            // Checkbox
-            var colSelected = new DataGridViewCheckBoxColumn
-            {
-                DataPropertyName = "Selected",
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-            };
-            dataGridViewDatabases.Columns.Add(colSelected);
+            // Checkbox with select-all header
+            dataGridViewDatabases.AddCheckBoxColumnWithSelectAll("Selected");
 
             // Database name column
             var colName = new DataGridViewTextBoxColumn
@@ -765,13 +755,8 @@ namespace SQLMultiScript.UI.Forms
 
             };
 
-            // Checkbox
-            var colSelected = new DataGridViewCheckBoxColumn
-            {
-                DataPropertyName = "Selected",
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-            };
-            dataGridViewScripts.Columns.Add(colSelected);
+            // Checkbox with select-all header
+            dataGridViewScripts.AddCheckBoxColumnWithSelectAll("Selected");
 
             // Nome do Script
             var colName = new DataGridViewTextBoxColumn
