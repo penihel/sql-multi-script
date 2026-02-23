@@ -32,10 +32,7 @@ namespace SQLMultiScript.Services
             return await Task.FromResult(project);
         }
 
-        public Task<Result<Project>> CreateNewAsync(string filePath)
-        {
-            throw new NotImplementedException();
-        }
+       
 
         public async Task<Project> LoadAsync(string filePath)
         {

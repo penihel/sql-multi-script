@@ -672,7 +672,7 @@ namespace SQLMultiScript.UI.Forms
             };
             dataGridViewDatabases.Columns.Add(colServer);
 
-            dataGridViewDatabases.CellClick += DataGridViewDatabases_CellClick;
+            
 
 
 
@@ -1317,33 +1317,11 @@ namespace SQLMultiScript.UI.Forms
             ShowScriptOnEditor(clickedScript);
         }
 
-        private void DataGridViewDatabases_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-
-        }
+        
 
 
 
-        private void ExecutarMenu_Click(object sender, EventArgs e)
-        {
-            if (_activeScript == null)
-            {
-                Log("[WARN] Nenhum script ativo para executar", true);
-                return;
-            }
-
-            string script = _activeScript.Content;
-            if (string.IsNullOrWhiteSpace(script))
-            {
-                Log("[WARN] Script vazio, nada a executar", true);
-                return;
-            }
-
-            // Aqui executa o script (simulado)
-            Log($"Executando script: {_activeScript.Name}");
-            Log(script);
-            Log("Execução concluída com sucesso");
-        }
+        
 
         private async void NewProjectItem_Click(object sender, EventArgs e)
         {
