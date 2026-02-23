@@ -32,7 +32,7 @@ namespace SQLMultiScript.Services
 
         }
 
-        public async Task OpenConnectionsAsync(IEnumerable<Database> databases)
+        public async Task OpenConnectionsAsync(IEnumerable<Database> databases, CancellationToken cancellationToken = default)
         {
             _connections = await _connectionService.ListAsync();
 
@@ -41,6 +41,8 @@ namespace SQLMultiScript.Services
 
             foreach (var database in databases)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 try
                 {
                     var connection = _connections.FirstOrDefault(c => c.Name == database.ConnectionName)
@@ -52,11 +54,11 @@ namespace SQLMultiScript.Services
 
                     RaiseOnUI(() => Log?.Invoke($"Connecting to {database.DatabaseName}"));
 
-                    await sqlConnection.OpenAsync();
+                    await sqlConnection.OpenAsync(cancellationToken);
 
                     await sqlConnection.CloseAsync();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     RaiseOnUI(() => Log?.Invoke(ex.Message));
                     throw;
@@ -67,10 +69,10 @@ namespace SQLMultiScript.Services
 
         }
 
-        public async Task ExecuteAsync(ExecutionScriptInfo scriptInfo, IProgress<ExecutionProgress> progress)
+        public async Task ExecuteAsync(ExecutionScriptInfo scriptInfo, IProgress<ExecutionProgress> progress, CancellationToken cancellationToken = default)
         {
             // Semaphore para limitar o número de execuções simultâneas
-            using var semaphore = new SemaphoreSlim(3); // 5 threads paralelas
+            using var semaphore = new SemaphoreSlim(3); // 3 threads paralelas
 
             scriptInfo.Status = ExecutionStatus.Executing;
 
@@ -86,12 +88,13 @@ namespace SQLMultiScript.Services
                 tasks.Add(Task.Run(async () =>
                 {
 
-                    await semaphore.WaitAsync();
+                    await semaphore.WaitAsync(cancellationToken);
 
 
 
                     try
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
 
                         databaseInfo.Status = ExecutionStatus.Executing;
 
@@ -100,7 +103,7 @@ namespace SQLMultiScript.Services
 
 
 
-                        var scriptResponse = await InternalExecuteAsync(scriptInfo, databaseInfo);
+                        var scriptResponse = await InternalExecuteAsync(scriptInfo, databaseInfo, cancellationToken);
 
 
                         if (scriptResponse.Success)
@@ -115,6 +118,15 @@ namespace SQLMultiScript.Services
 
                         databaseInfo.Response = scriptResponse;
 
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        databaseInfo.Status = ExecutionStatus.Cancelled;
+                        databaseInfo.Response = new ExecutionDatabaseResponse
+                        {
+                            Success = false,
+                            Messages = new List<string> { "Execution cancelled by user." }
+                        };
                     }
                     catch (Exception exScript)
                     {
@@ -144,16 +156,27 @@ namespace SQLMultiScript.Services
 
             await Task.WhenAll(tasks);
 
+            foreach (DataTable table in scriptInfo.DataSet.Tables)
+            {
+                var t = table;
+                SendOnUI(() => t.EndLoadData());
+            }
 
-            var scriptInfoError = scriptInfo.DatabasesInfo.Any(di => di.Status == ExecutionStatus.Error);
+            var hasCancelled = scriptInfo.DatabasesInfo.Any(di => di.Status == ExecutionStatus.Cancelled);
+            var hasError = scriptInfo.DatabasesInfo.Any(di => di.Status == ExecutionStatus.Error);
 
-            scriptInfo.Status = scriptInfoError ? ExecutionStatus.Error : ExecutionStatus.Success;
+            if (hasCancelled && !hasError)
+                scriptInfo.Status = ExecutionStatus.Cancelled;
+            else if (hasError)
+                scriptInfo.Status = ExecutionStatus.Error;
+            else
+                scriptInfo.Status = ExecutionStatus.Success;
 
 
             progress?.Report(new ExecutionProgress(scriptInfo, null));
 
         }
-        private async Task<ExecutionDatabaseResponse> InternalExecuteAsync(ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo)//;;,Database database, ExecutionScriptInfo scriptInfo)
+        private async Task<ExecutionDatabaseResponse> InternalExecuteAsync(ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo, CancellationToken cancellationToken = default)
         {
             var scriptResponse = new ExecutionDatabaseResponse();
 
@@ -165,7 +188,7 @@ namespace SQLMultiScript.Services
 
             var script = scriptInfo.Script;
 
-            string content = script.Content ?? await File.ReadAllTextAsync(script.FilePath);
+            string content = script.Content ?? await File.ReadAllTextAsync(script.FilePath, cancellationToken);
 
             string connectionString = _connectionService.BuildConnectionString(connectionModel, database.DatabaseName);
 
@@ -194,7 +217,7 @@ namespace SQLMultiScript.Services
                 scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {e.Message}");
             };
 
-            await sqlConnection.OpenAsync();
+            await sqlConnection.OpenAsync(cancellationToken);
 
 
             RaiseLog(script, connectionString, "Connection Opened");
@@ -209,6 +232,7 @@ namespace SQLMultiScript.Services
                     if (string.IsNullOrWhiteSpace(batch))
                         continue;
 
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     //Log($"{script.Name}|{databaseConnectionInfo}|batch {i + 1}/{batches.Count} => Executing batch");
 
@@ -223,28 +247,21 @@ namespace SQLMultiScript.Services
                         if (e.RecordCount >= 0)
                             scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {e.RecordCount} linha(s) afetada(s)");
                     };
-                    using var reader = await cmd.ExecuteReaderAsync();
+                    using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
 
                     int resultIndex = 0;
 
                     do
                     {
-                        // Obtém o schema antes de começar a ler
                         var schema = reader.GetColumnSchema();
-
-                        // Cria uma nova tabela para cada resultset
                         var tableName = $"Batch{i + 1}_Result{++resultIndex}";
 
                         DataTable table;
+                        bool isNewTable = false;
 
                         lock (scriptInfo.DataSet)
                         {
-
-
-
                             table = scriptInfo.DataSet.Tables[tableName];
-
-
 
                             if (table == null)
                             {
@@ -253,7 +270,6 @@ namespace SQLMultiScript.Services
                                 table.Columns.Add("DatabaseName", typeof(string));
                                 table.Columns.Add("ConnectionName", typeof(string));
 
-
                                 for (int c = 0; c < schema.Count; c++)
                                 {
                                     var col = schema[c];
@@ -261,7 +277,6 @@ namespace SQLMultiScript.Services
                                         ? $"Column{c + 1}"
                                         : col.ColumnName;
 
-                                    // evita colunas duplicadas
                                     if (table.Columns.Contains(colName))
                                         colName = $"{colName}_{c + 1}";
 
@@ -269,47 +284,45 @@ namespace SQLMultiScript.Services
                                 }
 
                                 scriptInfo.DataSet.Tables.Add(table);
-
-
-                                RaiseOnUI(() => TableAdded?.Invoke(scriptInfo, databaseInfo, table));
-
+                                table.BeginLoadData();
+                                isNewTable = true;
                             }
                         }
 
-
-
-
-
-
-                        // lê linha a linha, adicionando incrementalmente
-                        while (await reader.ReadAsync())
+                        if (isNewTable)
                         {
-                            var row = table.NewRow();
-                            row["DatabaseName"] = database.DatabaseName;
-                            row["ConnectionName"] = database.ConnectionName;
+                            SendOnUI(() => TableAdded?.Invoke(scriptInfo, databaseInfo, table));
+                        }
 
+                        while (await reader.ReadAsync(cancellationToken))
+                        {
+                            // Lê valores do reader em buffer local (thread-safe, sem tocar no DataTable)
+                            var values = new object[schema.Count];
                             for (int c = 0; c < schema.Count; c++)
                             {
-                                var colName = string.IsNullOrWhiteSpace(schema[c].ColumnName)
-                                    ? $"Column{c + 1}"
-                                    : schema[c].ColumnName;
-
-                                var value = reader.GetValue(c);
-
-                                row[colName] = value;//== DBNull.Value ? null : value;
+                                values[c] = reader.GetValue(c);
                             }
 
-                            table.Rows.Add(row);
+                            // Todas as mutações no DataTable dentro do lock
+                            DataRow row;
+                            lock (scriptInfo.DataSet)
+                            {
+                                row = table.NewRow();
+                                row[0] = database.DatabaseName;
+                                row[1] = database.ConnectionName;
+
+                                for (int c = 0; c < values.Length; c++)
+                                {
+                                    row[c + 2] = values[c];
+                                }
+
+                                table.Rows.Add(row);
+                            }
 
                             RaiseOnUI(() => RowAdded?.Invoke(scriptInfo, databaseInfo, table, row));
-
-                            // Aqui a UI pode ser notificada (ex: evento, INotifyCollectionChanged, etc)
-                            // Se você estiver em WPF/WinForms e o DataGrid estiver ligado ao DataSet,
-                            // a linha já vai aparecer automaticamente.
-
                         }
 
-                    } while (await reader.NextResultAsync());
+                    } while (await reader.NextResultAsync(cancellationToken));
                 }
 
                 transaction.Commit();
@@ -334,8 +347,7 @@ namespace SQLMultiScript.Services
                 }
                 catch (Exception rbEx)
                 {
-                    //_logger.LogError(rbEx, rbEx.Message);
-                    throw;
+                    scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] Rollback failed: {rbEx.Message}");
                 }
             }
 
@@ -380,6 +392,14 @@ namespace SQLMultiScript.Services
                 action();
             else
                 UiContext.Post(_ => action(), null);
+        }
+
+        private void SendOnUI(Action action)
+        {
+            if (UiContext == null)
+                action();
+            else
+                UiContext.Send(_ => action(), null);
         }
     }
 

@@ -39,6 +39,8 @@ namespace SQLMultiScript.UI.Forms
 
         private BindingList<Execution> _executions = new BindingList<Execution>();
 
+        private CancellationTokenSource _executionCts;
+
 
         // -----------------------
         // Controls
@@ -65,6 +67,8 @@ namespace SQLMultiScript.UI.Forms
         private ImageList imageListResults;
 
         private TabControl tabControlMessagesAndResults;
+
+        private Button btnStop;
 
 
 
@@ -293,17 +297,9 @@ namespace SQLMultiScript.UI.Forms
             {
                 foreach (var c in (tab as TabPage).Controls)
                 {
-
-                    if (c is DataGridView dgv && dgv.DataSource is DataTable dt)
+                    if (c is DataGridView dgv)
                     {
-                        if (InvokeRequired)
-                        {
-                            Invoke(new Action(() => dgv.Refresh()));
-                        }
-                        else
-                        {
-                            dgv.Refresh();
-                        }
+                        dgv.Refresh();
                     }
                 }
             }
@@ -311,13 +307,6 @@ namespace SQLMultiScript.UI.Forms
 
         private void ExecutionService_TableAdded(ExecutionScriptInfo arg2, ExecutionDatabaseInfo arg3, DataTable table)
         {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => ExecutionService_TableAdded(arg2, arg3, table)));
-
-                return;
-            }
-
             if (tabControlMessagesAndResults.TabPages.Cast<TabPage>().Any(tp => tp.Text == table.TableName))
             {
                 return;
@@ -330,10 +319,6 @@ namespace SQLMultiScript.UI.Forms
             tabControlMessagesAndResults.SelectedIndex = tabControlMessagesAndResults.TabCount - 1;
 
             tabResult.Controls.Add(DataGridViewFactory.CreateToResult(table));
-
-
-
-
         }
 
         private void ExecutionService_InfoMessageRecived(ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo, string message)
@@ -456,6 +441,7 @@ namespace SQLMultiScript.UI.Forms
             imageListResults.Images.Add(nameof(ExecutionStatus.Executing), Images.circle_blue);
             imageListResults.Images.Add(nameof(ExecutionStatus.Error), Images.circle_red);
             imageListResults.Images.Add(nameof(ExecutionStatus.Success), Images.circle_green);
+            imageListResults.Images.Add(nameof(ExecutionStatus.Cancelled), Images.circle_gray);
         }
 
         private void SetupResultPanel(Panel panel)
@@ -617,8 +603,20 @@ namespace SQLMultiScript.UI.Forms
                 .Customize(b => b.Text = Strings.Execute)
                 .Customize(b => b.Anchor = AnchorStyles.Top);
 
+            btnStop = ButtonFactory.Create(ToolTip,
+                Strings.Cancel,
+                Images.ic_fluent_dismiss_24_regular,
+                BtnStop_Click)
+                .Customize(b => b.AutoSize = true)
+                .Customize(b => b.Padding = new Padding(20, 5, 20, 20))
+                .Customize(b => b.TextImageRelation = TextImageRelation.ImageBeforeText)
+                .Customize(b => b.Text = Strings.Cancel)
+                .Customize(b => b.Anchor = AnchorStyles.Top)
+                .Customize(b => b.Enabled = false);
 
 
+
+            parentPanel.Controls.Add(btnStop);
             parentPanel.Controls.Add(btnRun);
 
         }
@@ -900,6 +898,10 @@ namespace SQLMultiScript.UI.Forms
             var newProjectItem = new ToolStripMenuItem("New Project");
             newProjectItem.Click += NewProjectItem_Click;
             fileMenu.DropDownItems.Add(newProjectItem);
+
+            var openProjectItem = new ToolStripMenuItem("Open Project");
+            openProjectItem.Click += OpenProjectItem_Click;
+            fileMenu.DropDownItems.Add(openProjectItem);
 
             var saveProjectItem = new ToolStripMenuItem("Save Project");
             saveProjectItem.Click += SaveProjectItem_Click;
@@ -1245,17 +1247,39 @@ namespace SQLMultiScript.UI.Forms
 
         private void BtnRemove_Click(object sender, EventArgs e)
         {
-
+            RemoveScripts();
         }
 
         private void BtnUp_Click(object sender, EventArgs e)
         {
+            if (_currentProject == null || dataGridViewScripts.SelectedRows.Count != 1) return;
 
+            int index = dataGridViewScripts.SelectedRows[0].Index;
+            if (index <= 0) return;
+
+            var scripts = _currentProject.Scripts;
+            var item = scripts[index];
+            scripts.RemoveAt(index);
+            scripts.Insert(index - 1, item);
+
+            dataGridViewScripts.ClearSelection();
+            dataGridViewScripts.Rows[index - 1].Selected = true;
         }
 
         private void BtnDown_Click(object sender, EventArgs e)
         {
+            if (_currentProject == null || dataGridViewScripts.SelectedRows.Count != 1) return;
 
+            int index = dataGridViewScripts.SelectedRows[0].Index;
+            if (index >= _currentProject.Scripts.Count - 1) return;
+
+            var scripts = _currentProject.Scripts;
+            var item = scripts[index];
+            scripts.RemoveAt(index);
+            scripts.Insert(index + 1, item);
+
+            dataGridViewScripts.ClearSelection();
+            dataGridViewScripts.Rows[index + 1].Selected = true;
         }
         private void BtnNew_Click(object sender, EventArgs e)
         {
@@ -1323,9 +1347,49 @@ namespace SQLMultiScript.UI.Forms
 
         private async void NewProjectItem_Click(object sender, EventArgs e)
         {
-            // Lógica para criar um novo projeto
             Log("[INFO] New Project clicado");
             await NewProjectAsync();
+        }
+
+        private async void OpenProjectItem_Click(object sender, EventArgs e)
+        {
+            if (!CheckUnsavedChanges()) return;
+
+            using var ofd = new OpenFileDialog
+            {
+                Filter = "SQL Multi Script Project Files (*.smsjsonproj)|*.smsjsonproj"
+            };
+
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+
+            try
+            {
+                _activeScript = null;
+                sqlEditor.Text = string.Empty;
+
+                _currentProject = await _projectService.LoadAsync(ofd.FileName);
+
+                dataGridViewScripts.DataSource = _currentProject.Scripts;
+
+                var firstScript = _currentProject.Scripts.FirstOrDefault();
+                if (firstScript != null)
+                {
+                    ShowScriptOnEditor(firstScript);
+                }
+
+                if (!string.IsNullOrEmpty(_currentProject.SelectedDistributionList))
+                {
+                    SelectedDistributionList = DatabaseDistributionLists?
+                        .FirstOrDefault(d => d.Name == _currentProject.SelectedDistributionList);
+                }
+
+                Log($"Projeto carregado: {_currentProject.FilePath}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Erro ao carregar projeto: {ex.Message}", true);
+                MessageBox.Show($"Erro ao carregar: {ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private async void SaveProjectItem_Click(object sender, EventArgs e)
@@ -1406,15 +1470,22 @@ namespace SQLMultiScript.UI.Forms
 
         }
 
-        private void btnDatabaseDistributionList_Click(object sender, EventArgs e)
+        private async void btnDatabaseDistributionList_Click(object sender, EventArgs e)
         {
             var databaseDistributionListForm = _serviceProvider.GetRequiredService<DatabaseDistributionListForm>();
 
-
             var result = databaseDistributionListForm.ShowDialog(this);
 
-            databaseDistributionListForm.SelectedDistributionList = SelectedDistributionList;
+            if (result == DialogResult.OK)
+            {
+                var previousSelection = SelectedDistributionList?.Name;
 
+                await LoadDistribuitionListsAsync();
+
+                SelectedDistributionList = DatabaseDistributionLists?
+                    .FirstOrDefault(d => d.Name == previousSelection)
+                    ?? DatabaseDistributionLists?.FirstOrDefault();
+            }
         }
 
         private void RemoveScripts()
@@ -1447,7 +1518,12 @@ namespace SQLMultiScript.UI.Forms
         {
             var btn = (Button)sender;
             btn.Enabled = false;
+            btnStop.Enabled = true;
             Cursor = Cursors.WaitCursor;
+
+            _executionCts?.Dispose();
+            _executionCts = new CancellationTokenSource();
+            var cancellationToken = _executionCts.Token;
 
             try
             {
@@ -1487,7 +1563,7 @@ namespace SQLMultiScript.UI.Forms
 
 
 
-                await _executionService.OpenConnectionsAsync(selectedDatabases);
+                await _executionService.OpenConnectionsAsync(selectedDatabases, cancellationToken);
 
 
 
@@ -1502,19 +1578,31 @@ namespace SQLMultiScript.UI.Forms
 
                 foreach (var scriptInfo in execution.ScriptsInfo)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     SelectedExecutionScriptInfo = scriptInfo;
 
-                    await _executionService.ExecuteAsync(scriptInfo, new Progress<ExecutionProgress>(p => UpdateExecutionStatus(p)));
+                    await _executionService.ExecuteAsync(scriptInfo, new Progress<ExecutionProgress>(p => UpdateExecutionStatus(p)), cancellationToken);
                 }
 
-                var executionError = execution.ScriptsInfo.Any(si => si.Status == ExecutionStatus.Error);
+                var hasError = execution.ScriptsInfo.Any(si => si.Status == ExecutionStatus.Error);
+                var hasCancelled = execution.ScriptsInfo.Any(si => si.Status == ExecutionStatus.Cancelled);
 
-                execution.Status = executionError ? ExecutionStatus.Error : ExecutionStatus.Success;
+                if (hasError)
+                    execution.Status = ExecutionStatus.Error;
+                else if (hasCancelled)
+                    execution.Status = ExecutionStatus.Cancelled;
+                else
+                    execution.Status = ExecutionStatus.Success;
 
                 Log($"{execution.Name} : {execution.Status}");
 
 
 
+            }
+            catch (OperationCanceledException)
+            {
+                Log("Execução cancelada pelo usuário.", true);
             }
             catch (Exception ex)
             {
@@ -1524,13 +1612,21 @@ namespace SQLMultiScript.UI.Forms
             finally
             {
                 btn.Enabled = true;
+                btnStop.Enabled = false;
                 Cursor = Cursors.Default;
                 treeViewExecutions.Enabled = true;
             }
         }
 
-
-
+        private void BtnStop_Click(object sender, EventArgs e)
+        {
+            if (_executionCts != null && !_executionCts.IsCancellationRequested)
+            {
+                _executionCts.Cancel();
+                btnStop.Enabled = false;
+                Log("Cancelamento solicitado...");
+            }
+        }
 
 
         private void UpdateTreeView()

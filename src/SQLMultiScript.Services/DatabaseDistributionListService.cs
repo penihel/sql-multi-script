@@ -114,6 +114,33 @@ namespace SQLMultiScript.Services
 
             return Result.Ok();
         }
+
+        public Task<Result> DeleteAsync(DatabaseDistributionList databaseDistributionList)
+        {
+            if (databaseDistributionList == null) throw new ArgumentNullException(nameof(databaseDistributionList));
+
+            if (!string.IsNullOrEmpty(databaseDistributionList.FilePath) && File.Exists(databaseDistributionList.FilePath))
+            {
+                File.Delete(databaseDistributionList.FilePath);
+            }
+
+            return Task.FromResult(Result.Ok());
+        }
+
+        public async Task<Result> RenameAsync(DatabaseDistributionList databaseDistributionList, string newName)
+        {
+            if (databaseDistributionList == null) throw new ArgumentNullException(nameof(databaseDistributionList));
+            if (string.IsNullOrWhiteSpace(newName)) return Result.Fail(Strings.FieldCannotBeEmpty);
+
+            var list = await ListAsync();
+            if (list.Any(d => d.Name == newName && d.FilePath != databaseDistributionList.FilePath))
+            {
+                return Result.Fail(Strings.RecordAlreadyExists);
+            }
+
+            databaseDistributionList.Name = newName;
+            return await SaveAsync(databaseDistributionList);
+        }
     }
 
 }

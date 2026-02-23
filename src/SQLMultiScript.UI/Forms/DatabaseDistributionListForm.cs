@@ -169,13 +169,13 @@ namespace SQLMultiScript.UI.Forms
             var btnRenameDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
                 Strings.Rename,
                 Images.ic_fluent_rename_24_regular,
-                null,
+                BtnRenameDatabaseDistribuitionList_Click,
                 DockStyle.Right);
 
             var btnRemoveDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
                 Strings.Remove,
                 Images.ic_fluent_delete_24_regular,
-                null,
+                BtnRemoveDatabaseDistribuitionList_Click,
                 DockStyle.Right);
 
 
@@ -437,7 +437,21 @@ namespace SQLMultiScript.UI.Forms
 
         private void BtnRemove_Click(object sender, EventArgs e)
         {
-            // TODO: Implement remove logic
+            if (SelectedDistributionList == null || dataGridViewDatabases.SelectedRows.Count == 0)
+                return;
+
+            var selectedDatabases = dataGridViewDatabases.SelectedRows
+                .Cast<DataGridViewRow>()
+                .Select(r => r.DataBoundItem as Database)
+                .Where(d => d != null)
+                .ToList();
+
+            foreach (var db in selectedDatabases)
+            {
+                SelectedDistributionList.Databases.Remove(db);
+            }
+
+            dataGridViewDatabases.Refresh();
         }
 
         private void BtnAdd_Click(object sender, EventArgs e)
@@ -598,6 +612,55 @@ namespace SQLMultiScript.UI.Forms
 
 
             }
+        }
+
+        private async void BtnRenameDatabaseDistribuitionList_Click(object sender, EventArgs e)
+        {
+            if (SelectedDistributionList == null)
+            {
+                MessageBox.Show(Strings.NoDistributionListSelected);
+                return;
+            }
+
+            string newName = Prompt.ShowDialog(Strings.DatabaseDistributionListEnterPrompt, Strings.Rename);
+            if (string.IsNullOrWhiteSpace(newName)) return;
+
+            var result = await _databaseDistributionListService.RenameAsync(SelectedDistributionList, newName);
+            if (!result.Success)
+            {
+                MessageBox.Show(result.ToString());
+                return;
+            }
+
+            await BindDataAsync();
+            SelectedDistributionList = _databaseDistributionLists.FirstOrDefault(d => d.Name == newName);
+        }
+
+        private async void BtnRemoveDatabaseDistribuitionList_Click(object sender, EventArgs e)
+        {
+            if (SelectedDistributionList == null)
+            {
+                MessageBox.Show(Strings.NoDistributionListSelected);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Remove '{SelectedDistributionList.Name}'?",
+                Strings.Remove,
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirm != DialogResult.Yes) return;
+
+            var result = await _databaseDistributionListService.DeleteAsync(SelectedDistributionList);
+            if (!result.Success)
+            {
+                MessageBox.Show(result.ToString());
+                return;
+            }
+
+            await BindDataAsync();
+            SelectedDistributionList = _databaseDistributionLists.FirstOrDefault();
         }
 
         private async void BtnSave_Click(object sender, EventArgs e)

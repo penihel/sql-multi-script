@@ -6,8 +6,8 @@ namespace SQLMultiScript.Core.Interfaces
     public interface IExecutionService
     {
         SynchronizationContext UiContext { get; set; }
-        Task OpenConnectionsAsync(IEnumerable<Database> databases);
-        Task ExecuteAsync(ExecutionScriptInfo scriptInfo, IProgress<ExecutionProgress> progress);
+        Task OpenConnectionsAsync(IEnumerable<Database> databases, CancellationToken cancellationToken = default);
+        Task ExecuteAsync(ExecutionScriptInfo scriptInfo, IProgress<ExecutionProgress> progress, CancellationToken cancellationToken = default);
 
         event Action<string> Log;
         event Action<ExecutionScriptInfo, ExecutionDatabaseInfo, string> InfoMessageRecived;

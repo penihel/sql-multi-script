@@ -39,21 +39,19 @@ namespace SQLMultiScript.Services
 
         public async Task<Project> LoadAsync(string filePath)
         {
-
-
-
-
-
             var state = new Project();
 
             if (File.Exists(filePath))
             {
                 var json = await File.ReadAllTextAsync(filePath);
-                state = System.Text.Json.JsonSerializer.Deserialize<Project>(json);
-                if (state != null)
+                var projectFile = System.Text.Json.JsonSerializer.Deserialize<ProjectFile>(json);
+                if (projectFile?.Project != null)
+                {
+                    state = projectFile.Project;
                     state.FilePath = filePath;
+                }
             }
-            return state ?? new Project();
+            return state;
 
         }
 

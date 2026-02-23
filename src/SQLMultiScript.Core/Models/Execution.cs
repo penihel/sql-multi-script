@@ -60,6 +60,7 @@ namespace SQLMultiScript.Core.Models
         Executing,
         Error,
         Success,
+        Cancelled,
     }
 
     public class ExecutionProgress

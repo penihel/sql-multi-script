@@ -49,7 +49,12 @@
         {
             if (string.IsNullOrWhiteSpace(message))
                 return;
-            
+
+            if (InvokeRequired)
+            {
+                BeginInvoke(() => AppendColored(message, color));
+                return;
+            }
 
             rtb.SelectionStart = rtb.TextLength;
             rtb.SelectionColor = color;
