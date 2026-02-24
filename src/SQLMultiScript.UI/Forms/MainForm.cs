@@ -70,7 +70,8 @@ namespace SQLMultiScript.UI.Forms
 
         private Button btnRun, btnStop;
 
-
+        private System.Windows.Forms.Timer _refreshTimer;
+        private bool _resultsDirty;
 
 
         // -----------------------
@@ -281,28 +282,17 @@ namespace SQLMultiScript.UI.Forms
 
         private void ExecutionService_ErrorOccurred(ExecutionScriptInfo arg1, ExecutionDatabaseInfo arg2, Exception arg3)
         {
-
-
+            var prefix = $"[{arg2.Database.DatabaseName}]";
             do
             {
-                outputMessagesResults.AppendError(arg3.Message);
+                outputMessagesResults.AppendError($"{prefix} {arg3.Message}");
                 arg3 = arg3.InnerException;
             } while (arg3 != null);
-
         }
 
         private void ExecutionService_RowAdded(ExecutionScriptInfo arg2, ExecutionDatabaseInfo arg3, DataTable arg4, DataRow arg5)
         {
-            foreach (var tab in tabControlMessagesAndResults.TabPages)
-            {
-                foreach (var c in (tab as TabPage).Controls)
-                {
-                    if (c is DataGridView dgv)
-                    {
-                        dgv.Refresh();
-                    }
-                }
-            }
+            _resultsDirty = true;
         }
 
         private void ExecutionService_TableAdded(ExecutionScriptInfo arg2, ExecutionDatabaseInfo arg3, DataTable table)
@@ -316,14 +306,36 @@ namespace SQLMultiScript.UI.Forms
 
             tabControlMessagesAndResults.TabPages.Add(tabResult);
 
-            tabControlMessagesAndResults.SelectedIndex = tabControlMessagesAndResults.TabCount - 1;
-
             tabResult.Controls.Add(DataGridViewFactory.CreateToResult(table));
+
+            _resultsDirty = true;
         }
 
         private void ExecutionService_InfoMessageRecived(ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo, string message)
         {
             outputMessagesResults.AppendInfo(message);
+        }
+
+        private void RefreshTimer_Tick(object sender, EventArgs e)
+        {
+            if (!_resultsDirty) return;
+            _resultsDirty = false;
+
+            var selectedTab = tabControlMessagesAndResults.SelectedTab;
+            if (selectedTab != null)
+            {
+                foreach (Control c in selectedTab.Controls)
+                {
+                    if (c is DataGridView dgv && dgv.DataSource is BindingSource bs)
+                    {
+                        bs.ResetBindings(false);
+                        if (dgv.RowCount > 0)
+                            dgv.FirstDisplayedScrollingRowIndex = dgv.RowCount - 1;
+                    }
+                }
+            }
+
+            dataGridViewDatabasesResults.Refresh();
         }
 
         /// <summary>
@@ -1452,6 +1464,12 @@ namespace SQLMultiScript.UI.Forms
             btnStop.Visible = true;
             Cursor = Cursors.WaitCursor;
 
+            _refreshTimer ??= new System.Windows.Forms.Timer { Interval = 500 };
+            _refreshTimer.Tick -= RefreshTimer_Tick;
+            _refreshTimer.Tick += RefreshTimer_Tick;
+            _resultsDirty = false;
+            _refreshTimer.Start();
+
             _executionCts?.Dispose();
             _executionCts = new CancellationTokenSource();
             var cancellationToken = _executionCts.Token;
@@ -1545,6 +1563,9 @@ namespace SQLMultiScript.UI.Forms
             }
             finally
             {
+                _refreshTimer?.Stop();
+                RefreshTimer_Tick(null, EventArgs.Empty);
+
                 btnRun.Visible = true;
                 btnStop.Visible = false;
                 btnStop.Enabled = true;

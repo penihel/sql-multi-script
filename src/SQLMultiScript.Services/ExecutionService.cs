@@ -216,12 +216,12 @@ namespace SQLMultiScript.Services
 
             sqlConnection.InfoMessage += (s, e) =>
             {
-                e.Errors.Cast<SqlError>().ToList().ForEach(err =>
+                foreach (SqlError err in e.Errors)
                 {
-                    scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {err.Message}");
-                });
-
-                scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {e.Message}");
+                    var msg = $"[{database.DatabaseName}] {err.Message}";
+                    scriptResponse.Messages.Add(msg);
+                    RaiseOnUI(() => InfoMessageRecived?.Invoke(scriptInfo, databaseInfo, msg));
+                }
             };
 
             await sqlConnection.OpenAsync(cancellationToken);
@@ -247,9 +247,12 @@ namespace SQLMultiScript.Services
                     cmd.CommandTimeout = _commandTimeoutSeconds;
                     cmd.StatementCompleted += (s, e) =>
                     {
-                        // Captura mensagens do tipo "(X rows affected)"
                         if (e.RecordCount >= 0)
-                            scriptResponse.Messages.Add($"[{database.DatabaseName}][{database.ConnectionName}] {e.RecordCount} linha(s) afetada(s)");
+                        {
+                            var msg = $"[{database.DatabaseName}] {e.RecordCount} linha(s) afetada(s)";
+                            scriptResponse.Messages.Add(msg);
+                            RaiseOnUI(() => InfoMessageRecived?.Invoke(scriptInfo, databaseInfo, msg));
+                        }
                     };
                     using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
 
