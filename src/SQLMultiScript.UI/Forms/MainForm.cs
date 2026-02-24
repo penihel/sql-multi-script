@@ -10,6 +10,7 @@ using SQLMultiScript.UI.UserControls;
 using System.ComponentModel;
 using System.Data;
 using System.Windows.Forms;
+using ClosedXML.Excel;
 
 namespace SQLMultiScript.UI.Forms
 {
@@ -68,7 +69,7 @@ namespace SQLMultiScript.UI.Forms
 
         private TabControl tabControlMessagesAndResults;
 
-        private Button btnRun, btnStop;
+        private Button btnRun, btnStop, btnExportExcel;
 
         private System.Windows.Forms.Timer _refreshTimer;
 
@@ -168,6 +169,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 dataGridViewDatabasesResults.DataSource = null;
                 dataGridViewDatabasesResults.Refresh();
+                btnExportExcel.Visible = false;
 
                 return;
             }
@@ -213,6 +215,8 @@ namespace SQLMultiScript.UI.Forms
 
 
             tabControlMessagesAndResults.SelectedIndex = tabControlMessagesAndResults.TabCount - 1;
+
+            UpdateExcelButtonVisibility();
 
             RefreshMessagesAndResults();
 
@@ -263,6 +267,85 @@ namespace SQLMultiScript.UI.Forms
                         bs.Filter = filter;
                     }
                 }
+            }
+        }
+
+        private void UpdateExcelButtonVisibility()
+        {
+            var hasResultGrids = tabControlMessagesAndResults.TabPages
+                .Cast<TabPage>()
+                .Any(tp => tp.Controls.OfType<DataGridView>().Any());
+
+            btnExportExcel.Visible = hasResultGrids;
+        }
+
+        private void BtnExportExcel_Click(object sender, EventArgs e)
+        {
+            using var sfd = new SaveFileDialog
+            {
+                Filter = "Excel Files (*.xlsx)|*.xlsx",
+                FileName = SelectedExecutionScriptInfo?.Script?.Name ?? "Result"
+            };
+
+            if (sfd.ShowDialog() != DialogResult.OK) return;
+
+            try
+            {
+                using var workbook = new XLWorkbook();
+
+                foreach (TabPage tab in tabControlMessagesAndResults.TabPages)
+                {
+                    foreach (Control c in tab.Controls)
+                    {
+                        if (c is DataGridView dgv)
+                        {
+                            var sheetName = tab.Text.Length > 31
+                                ? tab.Text[..31]
+                                : tab.Text;
+
+                            var ws = workbook.Worksheets.Add(sheetName);
+
+                            // Headers
+                            for (int col = 0; col < dgv.ColumnCount; col++)
+                            {
+                                ws.Cell(1, col + 1).Value = dgv.Columns[col].HeaderText;
+                                ws.Cell(1, col + 1).Style.Font.Bold = true;
+                            }
+
+                            // Rows (only visible/displayed rows)
+                            int row = 2;
+                            for (int i = 0; i < dgv.Rows.Count; i++)
+                            {
+                                var dgvRow = dgv.Rows[i];
+                                if (!dgvRow.Visible || dgvRow.IsNewRow) continue;
+
+                                for (int col = 0; col < dgv.ColumnCount; col++)
+                                {
+                                    var cellValue = dgvRow.Cells[col].Value;
+                                    if (cellValue != null)
+                                        ws.Cell(row, col + 1).SetValue(XLCellValue.FromObject(cellValue));
+                                }
+                                row++;
+                            }
+
+                            ws.Columns().AdjustToContents();
+                        }
+                    }
+                }
+
+                if (workbook.Worksheets.Count == 0)
+                {
+                    Log("Nenhum resultado para exportar.", true);
+                    return;
+                }
+
+                workbook.SaveAs(sfd.FileName);
+                Log($"Excel exportado: {sfd.FileName}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Erro ao exportar Excel: {ex.Message}", true);
+                MessageBox.Show($"Erro ao exportar: {ex.Message}", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -341,6 +424,8 @@ namespace SQLMultiScript.UI.Forms
             // Auto-switch to the first result tab (index 0 is Messages)
             if (tabControlMessagesAndResults.TabCount == 2)
                 tabControlMessagesAndResults.SelectedTab = tabResult;
+
+            UpdateExcelButtonVisibility();
         }
 
         private void ExecutionService_InfoMessageRecived(ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo, string message)
@@ -606,6 +691,19 @@ namespace SQLMultiScript.UI.Forms
             tabControlMessagesAndResults = new TabControl { Dock = DockStyle.Fill };
 
             panelResults.Controls.Add(tabControlMessagesAndResults);
+
+            // Excel export button panel (above the tab control)
+            var resultButtonPanel = PanelFactory.Create(TopHeight, DockStyle.Top);
+
+            btnExportExcel = ButtonFactory.Create(ToolTip,
+                "Excel",
+                Images.ic_fluent_document_table_24_regular,
+                BtnExportExcel_Click,
+                DockStyle.Right);
+            btnExportExcel.Visible = false;
+
+            resultButtonPanel.Controls.Add(btnExportExcel);
+            panelResults.Controls.Add(resultButtonPanel);
 
             outputMessagesResults = new OutputMessagesPanel();
 
@@ -1518,6 +1616,7 @@ namespace SQLMultiScript.UI.Forms
         {
             btnRun.Visible = false;
             btnStop.Visible = true;
+            btnExportExcel.Enabled = false;
 
             _refreshTimer ??= new System.Windows.Forms.Timer { Interval = 500 };
             _refreshTimer.Tick -= RefreshTimer_Tick;
@@ -1623,6 +1722,7 @@ namespace SQLMultiScript.UI.Forms
                 btnRun.Visible = true;
                 btnStop.Visible = false;
                 btnStop.Enabled = true;
+                btnExportExcel.Enabled = true;
                 treeViewExecutions.Enabled = true;
             }
         }
