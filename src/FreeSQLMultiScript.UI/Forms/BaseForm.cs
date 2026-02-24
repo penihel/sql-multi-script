@@ -1,0 +1,62 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace FreeSQLMultiScript.UI.Forms
+{
+    public abstract class BaseForm : Form, INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected readonly ToolTip ToolTip = new ToolTip();
+
+
+        protected void InitializeFormAsFixedDialog() 
+        {
+            ShowInTaskbar = false;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            StartPosition = FormStartPosition.CenterParent;
+
+            
+        }
+
+        protected void SetFormDialogSize(decimal percent) 
+        {
+            var screenSize = Screen.PrimaryScreen.WorkingArea;
+
+            // Set size to 70% of the screen
+            int width = (int)(screenSize.Width * percent);
+            int height = (int)(screenSize.Height * percent);
+            
+            Size = new Size(width, height);
+        }
+
+        protected int GetPercentOfScreenWidth(decimal percent) 
+        {
+            var screenSize = Screen.PrimaryScreen.WorkingArea;
+            return (int)(screenSize.Width * percent);
+        }
+
+        protected int GetPercentOfScreenHeight(decimal percent) 
+        {
+            var screenSize = Screen.PrimaryScreen.WorkingArea;
+            return (int)(screenSize.Height * percent);
+        }
+
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value))
+                return false;
+
+            field = value;
+            OnPropertyChanged(propertyName);
+            return true;
+        }
+    }
+}

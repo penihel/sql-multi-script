@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<ApplicationIcon>free-sql-multi-script.ico</ApplicationIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Content Include="free-sql-multi-script.ico">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="ClosedXML" Version="0.105.0" />
+	  <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+	  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
+	  <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
+	  
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\FreeSQLMultiScript.Core\FreeSQLMultiScript.Core.csproj" />
+	  <ProjectReference Include="..\FreeSQLMultiScript.Resources\FreeSQLMultiScript.Resources.csproj" />
+	  <ProjectReference Include="..\FreeSQLMultiScript.Services\FreeSQLMultiScript.Services.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Images.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Images.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Images.resx">
+	    <Generator>ResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Images.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+</Project>

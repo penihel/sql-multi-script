@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FreeSQLMultiScript.Core\FreeSQLMultiScript.Core.csproj" />
+    <ProjectReference Include="..\FreeSQLMultiScript.Resources\FreeSQLMultiScript.Resources.csproj" />
+  </ItemGroup>
+
+</Project>

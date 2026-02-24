@@ -1,4 +1,4 @@
-﻿# Free SQL Multi Script
+# Free SQL Multi Script
 
 **Free SQL Multi Script** is a free, open-source desktop application for executing SQL scripts across multiple SQL Server databases simultaneously. Built with .NET 8 and Windows Forms.
 
@@ -72,17 +72,17 @@
 ## Project Structure
 
 ```
- SQLMultiScript.Core/         # Domain models, interfaces, constants
- SQLMultiScript.Services/     # Business logic (execution, connections, projects)
- SQLMultiScript.Resources/    # Localized strings and images
- SQLMultiScript.UI/           # Windows Forms application (forms, controls, factories)
+ FreeSQLMultiScript.Core/         # Domain models, interfaces, constants
+ FreeSQLMultiScript.Services/     # Business logic (execution, connections, projects)
+ FreeSQLMultiScript.Resources/    # Localized strings and images
+ FreeSQLMultiScript.UI/           # Windows Forms application (forms, controls, factories)
 ```
 
 ## Getting Started
 
 1. Clone the repository
-2. Open `SQLMultiScript.sln` in Visual Studio 2022+
-3. Build and run the `SQLMultiScript.UI` project
+2. Open `FreeSQLMultiScript.sln` in Visual Studio 2022+
+3. Build and run the `FreeSQLMultiScript.UI` project
 4. Create a connection, set up a database distribution list, add scripts, and execute
 
 ## License
