@@ -1490,32 +1490,35 @@ namespace SQLMultiScript.UI.Forms
                     return;
                 }
 
-                Log($"Iniciando execução em {selectedDatabases.Count} banco(s) com {selectedScripts.Count} script(s)...");
+                var uniqueServers = selectedDatabases.Select(d => d.ConnectionName).Distinct().Count();
+                Log($"Starting execution: {selectedScripts.Count} script(s), {selectedDatabases.Count} database(s), {uniqueServers} server(s)");
 
-
-
+                // Phase 1: Authentication (one per server, for MFA token caching)
                 await _executionService.OpenConnectionsAsync(selectedDatabases, cancellationToken);
 
-
-
+                // Phase 2: Execution
                 var execution = CreateExecution(selectedScripts, selectedDatabases);
 
                 UpdateTreeView();
 
                 execution.Status = ExecutionStatus.Executing;
 
-
-                Log($"{execution.Name} - {execution.Status}");
+                var totalScripts = execution.ScriptsInfo.Count;
+                int scriptIndex = 0;
 
                 foreach (var scriptInfo in execution.ScriptsInfo)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+                    scriptIndex++;
+
+                    Log($"[Script {scriptIndex}/{totalScripts}] {scriptInfo.Script.Name}");
 
                     SelectedExecutionScriptInfo = scriptInfo;
 
                     await _executionService.ExecuteAsync(scriptInfo, new Progress<ExecutionProgress>(p => UpdateExecutionStatus(p)), cancellationToken);
                 }
 
+                // Phase 3: Summary
                 var hasError = execution.ScriptsInfo.Any(si => si.Status == ExecutionStatus.Error);
                 var hasCancelled = execution.ScriptsInfo.Any(si => si.Status == ExecutionStatus.Cancelled);
 
@@ -1526,7 +1529,7 @@ namespace SQLMultiScript.UI.Forms
                 else
                     execution.Status = ExecutionStatus.Success;
 
-                Log($"{execution.Name} : {execution.Status}");
+                Log($"{execution.Name}: {execution.Status}");
 
 
 

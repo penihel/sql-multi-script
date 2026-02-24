@@ -1,7 +1,8 @@
-ï»¿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using SQLMultiScript.Core.Interfaces;
 using SQLMultiScript.Core.Models;
 using System.Data;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace SQLMultiScript.Services
@@ -36,12 +37,21 @@ namespace SQLMultiScript.Services
         {
             _connections = await _connectionService.ListAsync();
 
-            RaiseOnUI(() => Log?.Invoke("Opening connections to databases..."));
+            var onePerConnection = databases
+                .GroupBy(d => d.ConnectionName)
+                .Select(g => g.First())
+                .ToList();
 
+            RaiseOnUI(() => Log?.Invoke($"[Auth] Authenticating on {onePerConnection.Count} server(s)..."));
 
-            foreach (var database in databases)
+            var swAuth = Stopwatch.StartNew();
+            int authIndex = 0;
+
+            foreach (var database in onePerConnection)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                authIndex++;
+                var idx = authIndex;
 
                 try
                 {
@@ -52,7 +62,7 @@ namespace SQLMultiScript.Services
 
                     await using var sqlConnection = new SqlConnection(connectionString);
 
-                    RaiseOnUI(() => Log?.Invoke($"Connecting to {database.DatabaseName}"));
+                    RaiseOnUI(() => Log?.Invoke($"[Auth] ({idx}/{onePerConnection.Count}) {database.ConnectionName}"));
 
                     await sqlConnection.OpenAsync(cancellationToken);
 
@@ -60,19 +70,26 @@ namespace SQLMultiScript.Services
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    RaiseOnUI(() => Log?.Invoke(ex.Message));
+                    RaiseOnUI(() => Log?.Invoke($"[Auth] Error on {database.ConnectionName}: {ex.Message}"));
                     throw;
                 }
-
             }
 
-
+            swAuth.Stop();
+            RaiseOnUI(() => Log?.Invoke($"[Auth] Completed in {swAuth.Elapsed.TotalSeconds:F1}s"));
         }
 
         public async Task ExecuteAsync(ExecutionScriptInfo scriptInfo, IProgress<ExecutionProgress> progress, CancellationToken cancellationToken = default)
         {
-            // Semaphore para limitar o nÃºmero de execuÃ§Ãµes simultÃ¢neas
-            using var semaphore = new SemaphoreSlim(3); // 3 threads paralelas
+            using var semaphore = new SemaphoreSlim(10);
+
+            var scriptName = scriptInfo.Script.Name;
+            var totalDbs = scriptInfo.DatabasesInfo.Count;
+            int completed = 0;
+
+            RaiseOnUI(() => Log?.Invoke($"[Exec] {scriptName}: starting on {totalDbs} database(s) (parallelism: 10)"));
+
+            var swExec = Stopwatch.StartNew();
 
             scriptInfo.Status = ExecutionStatus.Executing;
 
@@ -80,17 +97,11 @@ namespace SQLMultiScript.Services
 
             var tasks = new List<Task>();
 
-
             foreach (var databaseInfo in scriptInfo.DatabasesInfo)
             {
-
-
                 tasks.Add(Task.Run(async () =>
                 {
-
                     await semaphore.WaitAsync(cancellationToken);
-
-
 
                     try
                     {
@@ -98,26 +109,20 @@ namespace SQLMultiScript.Services
 
                         databaseInfo.Status = ExecutionStatus.Executing;
 
-
                         progress?.Report(new ExecutionProgress(scriptInfo, databaseInfo));
-
-
 
                         var scriptResponse = await InternalExecuteAsync(scriptInfo, databaseInfo, cancellationToken);
 
-
-                        if (scriptResponse.Success)
-                        {
-                            databaseInfo.Status = ExecutionStatus.Success;
-                        }
-                        else
-                        {
-                            databaseInfo.Status = ExecutionStatus.Error;
-                        }
-
+                        databaseInfo.Status = scriptResponse.Success
+                            ? ExecutionStatus.Success
+                            : ExecutionStatus.Error;
 
                         databaseInfo.Response = scriptResponse;
 
+                        var done = Interlocked.Increment(ref completed);
+                        var dbName = databaseInfo.Database.DatabaseName;
+                        var status = databaseInfo.Status;
+                        RaiseOnUI(() => Log?.Invoke($"[Exec] {scriptName}: ({done}/{totalDbs}) {dbName} => {status}"));
                     }
                     catch (OperationCanceledException)
                     {
@@ -138,20 +143,17 @@ namespace SQLMultiScript.Services
                             Messages = new List<string> { exScript.Message }
                         };
 
+                        var done = Interlocked.Increment(ref completed);
+                        var dbName = databaseInfo.Database.DatabaseName;
+                        RaiseOnUI(() => Log?.Invoke($"[Exec] {scriptName}: ({done}/{totalDbs}) {dbName} => ERROR: {exScript.Message}"));
                         RaiseOnUI(() => ErrorOccurred?.Invoke(scriptInfo, databaseInfo, exScript));
-
-
                     }
                     finally
                     {
                         progress?.Report(new ExecutionProgress(scriptInfo, databaseInfo));
-
                         semaphore.Release();
                     }
                 }));
-
-
-
             }
 
             await Task.WhenAll(tasks);
@@ -172,6 +174,11 @@ namespace SQLMultiScript.Services
             else
                 scriptInfo.Status = ExecutionStatus.Success;
 
+            swExec.Stop();
+            var successCount = scriptInfo.DatabasesInfo.Count(di => di.Status == ExecutionStatus.Success);
+            var errorCount = scriptInfo.DatabasesInfo.Count(di => di.Status == ExecutionStatus.Error);
+            var cancelledCount = scriptInfo.DatabasesInfo.Count(di => di.Status == ExecutionStatus.Cancelled);
+            RaiseOnUI(() => Log?.Invoke($"[Exec] {scriptName}: completed in {swExec.Elapsed.TotalSeconds:F1}s — {successCount} success, {errorCount} error, {cancelledCount} cancelled"));
 
             progress?.Report(new ExecutionProgress(scriptInfo, null));
 
@@ -193,9 +200,9 @@ namespace SQLMultiScript.Services
             string connectionString = _connectionService.BuildConnectionString(connectionModel, database.DatabaseName);
 
             if (string.IsNullOrWhiteSpace(connectionString))
-                throw new ArgumentException("connectionString nÃ£o pode ser vazio.", nameof(connectionString));
+                throw new ArgumentException("connectionString não pode ser vazio.", nameof(connectionString));
             if (string.IsNullOrWhiteSpace(content))
-                throw new ArgumentException("script nÃ£o pode ser vazio.", nameof(script));
+                throw new ArgumentException("script não pode ser vazio.", nameof(script));
 
 
 
@@ -218,9 +225,6 @@ namespace SQLMultiScript.Services
             };
 
             await sqlConnection.OpenAsync(cancellationToken);
-
-
-            RaiseLog(script, connectionString, "Connection Opened");
 
             using var transaction = sqlConnection.BeginTransaction();
 
@@ -296,14 +300,14 @@ namespace SQLMultiScript.Services
 
                         while (await reader.ReadAsync(cancellationToken))
                         {
-                            // LÃª valores do reader em buffer local (thread-safe, sem tocar no DataTable)
+                            // Lê valores do reader em buffer local (thread-safe, sem tocar no DataTable)
                             var values = new object[schema.Count];
                             for (int c = 0; c < schema.Count; c++)
                             {
                                 values[c] = reader.GetValue(c);
                             }
 
-                            // Todas as mutaÃ§Ãµes no DataTable dentro do lock
+                            // Todas as mutações no DataTable dentro do lock
                             DataRow row;
                             lock (scriptInfo.DataSet)
                             {
