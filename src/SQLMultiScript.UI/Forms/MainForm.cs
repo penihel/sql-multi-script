@@ -71,7 +71,6 @@ namespace SQLMultiScript.UI.Forms
         private Button btnRun, btnStop;
 
         private System.Windows.Forms.Timer _refreshTimer;
-        private bool _resultsDirty;
 
 
         // -----------------------
@@ -292,7 +291,6 @@ namespace SQLMultiScript.UI.Forms
 
         private void ExecutionService_RowAdded(ExecutionScriptInfo arg2, ExecutionDatabaseInfo arg3, DataTable arg4, DataRow arg5)
         {
-            _resultsDirty = true;
         }
 
         private void ExecutionService_TableAdded(ExecutionScriptInfo arg2, ExecutionDatabaseInfo arg3, DataTable table)
@@ -307,8 +305,6 @@ namespace SQLMultiScript.UI.Forms
             tabControlMessagesAndResults.TabPages.Add(tabResult);
 
             tabResult.Controls.Add(DataGridViewFactory.CreateToResult(table));
-
-            _resultsDirty = true;
         }
 
         private void ExecutionService_InfoMessageRecived(ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo, string message)
@@ -318,9 +314,7 @@ namespace SQLMultiScript.UI.Forms
 
         private void RefreshTimer_Tick(object sender, EventArgs e)
         {
-            if (!_resultsDirty) return;
-            _resultsDirty = false;
-
+            // Refresh the visible result tab's grid
             var selectedTab = tabControlMessagesAndResults.SelectedTab;
             if (selectedTab != null)
             {
@@ -335,7 +329,17 @@ namespace SQLMultiScript.UI.Forms
                 }
             }
 
+            // Refresh databases results grid and auto-scroll to last impacted row
             dataGridViewDatabasesResults.Refresh();
+            for (int i = dataGridViewDatabasesResults.RowCount - 1; i >= 0; i--)
+            {
+                if (dataGridViewDatabasesResults.Rows[i].DataBoundItem is ExecutionDatabaseInfo info
+                    && info.Status != ExecutionStatus.Queued)
+                {
+                    dataGridViewDatabasesResults.FirstDisplayedScrollingRowIndex = i;
+                    break;
+                }
+            }
         }
 
         /// <summary>
@@ -1462,12 +1466,10 @@ namespace SQLMultiScript.UI.Forms
         {
             btnRun.Visible = false;
             btnStop.Visible = true;
-            Cursor = Cursors.WaitCursor;
 
             _refreshTimer ??= new System.Windows.Forms.Timer { Interval = 500 };
             _refreshTimer.Tick -= RefreshTimer_Tick;
             _refreshTimer.Tick += RefreshTimer_Tick;
-            _resultsDirty = false;
             _refreshTimer.Start();
 
             _executionCts?.Dispose();
@@ -1569,7 +1571,6 @@ namespace SQLMultiScript.UI.Forms
                 btnRun.Visible = true;
                 btnStop.Visible = false;
                 btnStop.Enabled = true;
-                Cursor = Cursors.Default;
                 treeViewExecutions.Enabled = true;
             }
         }
@@ -1737,9 +1738,6 @@ namespace SQLMultiScript.UI.Forms
                     executionNode.Text = $"{execution.Name} - {execution.Status}";
                     executionNode.ImageKey = execution.Status.ToString();
                     executionNode.SelectedImageKey = execution.Status.ToString();
-
-
-                    dataGridViewDatabasesResults.Refresh();
 
 
                 }

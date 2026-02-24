@@ -298,7 +298,7 @@ namespace SQLMultiScript.Services
 
                         if (isNewTable)
                         {
-                            SendOnUI(() => TableAdded?.Invoke(scriptInfo, databaseInfo, table));
+                            RaiseOnUI(() => TableAdded?.Invoke(scriptInfo, databaseInfo, table));
                         }
 
                         while (await reader.ReadAsync(cancellationToken))
@@ -325,8 +325,6 @@ namespace SQLMultiScript.Services
 
                                 table.Rows.Add(row);
                             }
-
-                            RaiseOnUI(() => RowAdded?.Invoke(scriptInfo, databaseInfo, table, row));
                         }
 
                     } while (await reader.NextResultAsync(cancellationToken));
@@ -371,13 +369,7 @@ namespace SQLMultiScript.Services
             return parts.Select(p => p.Trim()).Where(p => !string.IsNullOrWhiteSpace(p));
         }
 
-        private void RaiseLog(Script script, string connectionString, string message)
-        {
-            var logPrefix = GetLogPrefix(script, connectionString);
-
-            RaiseOnUI(() => Log?.Invoke($"{logPrefix} {message}"));
-
-        }
+       
         private static string GetLogPrefix(Script script, string connectionString)
         {
             try

@@ -22,7 +22,7 @@ namespace SQLMultiScript.UI.ControlFactories
                 AllowUserToOrderColumns = false,
                 AllowUserToResizeColumns = false,
                 AllowUserToResizeRows = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells,
                 BackgroundColor = Color.White,
                 BorderStyle = BorderStyle.Fixed3D,
                 ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableWithAutoHeaderText,
