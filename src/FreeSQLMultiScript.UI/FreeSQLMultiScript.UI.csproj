@@ -3,16 +3,15 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows</TargetFramework>
-
+		<AssemblyName>FreeSQLMultiScript</AssemblyName>
+		<RootNamespace>FreeSQLMultiScript.UI</RootNamespace>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<ApplicationIcon>free-sql-multi-script.ico</ApplicationIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Content Include="free-sql-multi-script.ico">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </Content>
+	  <EmbeddedResource Include="free-sql-multi-script.ico" />
 	</ItemGroup>
 
 	<ItemGroup>

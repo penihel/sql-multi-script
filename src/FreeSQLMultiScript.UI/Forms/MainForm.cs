@@ -475,7 +475,9 @@ namespace FreeSQLMultiScript.UI.Forms
 
 
             Text = $"{Constants.ApplicationName} - {Constants.ApplicationVersion}";
-            Icon = new Icon("free-sql-multi-script.ico");
+            using var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("FreeSQLMultiScript.UI.free-sql-multi-script.ico");
+            if (iconStream != null)
+                Icon = new Icon(iconStream);
             WindowState = FormWindowState.Maximized;
 
 
