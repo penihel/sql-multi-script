@@ -155,7 +155,10 @@ namespace SQLMultiScript.UI.Forms
                 //Dock = DockStyle.Left
             };
 
-
+            comboBoxDatabaseDistributionList.SelectedIndexChanged += (s, e) =>
+            {
+                SelectedDistributionList = comboBoxDatabaseDistributionList.SelectedItem as DatabaseDistributionList;
+            };
 
             // New Distribution List Button
             var btnNewDatabaseDistribuitionList = ButtonFactory.Create(ToolTip,
@@ -389,6 +392,8 @@ namespace SQLMultiScript.UI.Forms
 
             if (comboBoxDatabaseDistributionList.DataBindings.Count == 0)
                 comboBoxDatabaseDistributionList.DataBindings.Add("SelectedItem", this, nameof(SelectedDistributionList), true, DataSourceUpdateMode.OnPropertyChanged);
+
+            SelectedDistributionList = _databaseDistributionLists.FirstOrDefault();
         }
 
         private async Task LoadConnectionsAsync()
@@ -607,7 +612,7 @@ namespace SQLMultiScript.UI.Forms
 
                 await BindDataAsync();
 
-                SelectedDistributionList = result.Value;
+                SelectedDistributionList = _databaseDistributionLists.FirstOrDefault(d => d.Name == name);
 
 
 

@@ -95,6 +95,7 @@ namespace SQLMultiScript.UI.Forms
 
         private void DatabaseDistributionListsChanged()
         {
+            comboBoxDatabaseDistributionList.DataSource = _databaseDistributionLists;
             comboBoxDatabaseDistributionList.Refresh();
             dataGridViewDatabases.Refresh();
         }
@@ -121,13 +122,15 @@ namespace SQLMultiScript.UI.Forms
         {
             if (_selectedDistributionList == null)
             {
-
                 dataGridViewDatabases.DataSource = null;
-                _currentProject.SelectedDistributionList = null;
+                if (_currentProject != null)
+                    _currentProject.SelectedDistributionList = null;
                 return;
             }
 
-            _currentProject.SelectedDistributionList = _selectedDistributionList.Name;
+            if (_currentProject != null)
+                _currentProject.SelectedDistributionList = _selectedDistributionList.Name;
+
             dataGridViewDatabases.DataSource = _selectedDistributionList?.Databases;
 
 
