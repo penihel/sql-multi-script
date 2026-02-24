@@ -68,7 +68,7 @@ namespace SQLMultiScript.UI.Forms
 
         private TabControl tabControlMessagesAndResults;
 
-        private Button btnStop;
+        private Button btnRun, btnStop;
 
 
 
@@ -343,22 +343,6 @@ namespace SQLMultiScript.UI.Forms
             Load += MainForm_Load;
 
 
-            var mainTableLayoutPanel = new TableLayoutPanel()
-            {
-                Dock = DockStyle.Fill,
-                AutoSize = true,
-                ColumnCount = 1,
-                RowCount = 2
-            };
-
-            mainTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, TopHeight));
-            mainTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-
-
-
-
-
             // main Split (top/bottom)
             var mainSplitContainer = new SplitContainer
             {
@@ -366,16 +350,7 @@ namespace SQLMultiScript.UI.Forms
                 Orientation = Orientation.Horizontal,
             };
 
-
-            var mainTopButtonsPanel = PanelFactory.Create();
-
-            SetupTopButtonsPanel(mainTopButtonsPanel);
-
-
-            mainTableLayoutPanel.Controls.Add(mainTopButtonsPanel, 0, 0);
-            mainTableLayoutPanel.Controls.Add(mainSplitContainer, 0, 1);
-
-            Controls.Add(mainTableLayoutPanel);
+            Controls.Add(mainSplitContainer);
 
             // Split Left
             var splitLeft = new SplitContainer
@@ -386,6 +361,7 @@ namespace SQLMultiScript.UI.Forms
             };
 
             mainSplitContainer.Panel1.Controls.Add(splitLeft);
+            mainSplitContainer.Panel1.Padding = Padding.Empty;
 
             // Setup Scripts Panel
             SetupScriptsPanel(splitLeft.Panel1);
@@ -583,37 +559,29 @@ namespace SQLMultiScript.UI.Forms
 
         }
 
-        private void SetupTopButtonsPanel(Panel parentPanel)
+        private void SetupExecutionButtons(Panel buttonPanel)
         {
-
-
-
-            var btnRun = ButtonFactory.Create(ToolTip,
+            btnRun = ButtonFactory.Create(ToolTip,
                 Strings.Execute,
                 Images.ic_fluent_play_multiple_16_regular,
-                BtnRun_Click)
+                BtnRun_Click,
+                DockStyle.Left)
                 .Customize(b => b.AutoSize = true)
-                .Customize(b => b.Padding = new Padding(20, 5, 20, 20))
                 .Customize(b => b.TextImageRelation = TextImageRelation.ImageBeforeText)
-                .Customize(b => b.Text = Strings.Execute)
-                .Customize(b => b.Anchor = AnchorStyles.Top);
+                .Customize(b => b.Text = Strings.Execute);
 
             btnStop = ButtonFactory.Create(ToolTip,
                 Strings.Cancel,
                 Images.ic_fluent_dismiss_24_regular,
-                BtnStop_Click)
+                BtnStop_Click,
+                DockStyle.Left)
                 .Customize(b => b.AutoSize = true)
-                .Customize(b => b.Padding = new Padding(20, 5, 20, 20))
                 .Customize(b => b.TextImageRelation = TextImageRelation.ImageBeforeText)
                 .Customize(b => b.Text = Strings.Cancel)
-                .Customize(b => b.Anchor = AnchorStyles.Top)
-                .Customize(b => b.Enabled = false);
+                .Customize(b => b.Visible = false);
 
-
-
-            parentPanel.Controls.Add(btnStop);
-            parentPanel.Controls.Add(btnRun);
-
+            buttonPanel.Controls.Add(btnStop);
+            buttonPanel.Controls.Add(btnRun);
         }
 
         private void SetupDatabaseDistributionListPanel(Panel parentPanel)
@@ -988,6 +956,7 @@ namespace SQLMultiScript.UI.Forms
 
             buttonPanel.Controls.Add(btnSave);
 
+            SetupExecutionButtons(buttonPanel);
 
             parentPanel.Controls.Add(buttonPanel);
 
@@ -1479,9 +1448,8 @@ namespace SQLMultiScript.UI.Forms
 
         private async void BtnRun_Click(object sender, EventArgs e)
         {
-            var btn = (Button)sender;
-            btn.Enabled = false;
-            btnStop.Enabled = true;
+            btnRun.Visible = false;
+            btnStop.Visible = true;
             Cursor = Cursors.WaitCursor;
 
             _executionCts?.Dispose();
@@ -1574,8 +1542,9 @@ namespace SQLMultiScript.UI.Forms
             }
             finally
             {
-                btn.Enabled = true;
-                btnStop.Enabled = false;
+                btnRun.Visible = true;
+                btnStop.Visible = false;
+                btnStop.Enabled = true;
                 Cursor = Cursors.Default;
                 treeViewExecutions.Enabled = true;
             }
@@ -1587,6 +1556,7 @@ namespace SQLMultiScript.UI.Forms
             {
                 _executionCts.Cancel();
                 btnStop.Enabled = false;
+                btnRun.Visible = true;
                 Log("Cancelamento solicitado...");
             }
         }
