@@ -183,27 +183,6 @@ namespace SQLMultiScript.UI.Forms
 
             tabMessages.Controls.Add(outputMessagesResults);
 
-
-            foreach (var databaseInfo in SelectedExecutionScriptInfo.DatabasesInfo)
-            {
-                if (databaseInfo.Response != null)
-                {
-                    if (!string.IsNullOrEmpty(databaseInfo.Response.MessagesText))
-                    {
-                        if (databaseInfo.Status == ExecutionStatus.Error)
-                        {
-                            outputMessagesResults.AppendError(databaseInfo.Response.MessagesText);
-                        }
-                        else
-                        {
-                            outputMessagesResults.AppendInfo(databaseInfo.Response.MessagesText);
-                        }
-                    }
-
-
-                }
-            }
-
             if (SelectedExecutionScriptInfo.DataSet != null &&
                 SelectedExecutionScriptInfo.DataSet.Tables.Count > 0)
             {
@@ -232,8 +211,56 @@ namespace SQLMultiScript.UI.Forms
 
             tabControlMessagesAndResults.SelectedIndex = tabControlMessagesAndResults.TabCount - 1;
 
+            RefreshMessagesAndResults();
 
+        }
 
+        private void RefreshMessagesAndResults()
+        {
+            if (SelectedExecutionScriptInfo == null) return;
+
+            var selectedDatabaseNames = SelectedExecutionScriptInfo.DatabasesInfo
+                .Where(di => di.Selected)
+                .Select(di => di.DatabaseName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // Refresh messages based on selected databases
+            outputMessagesResults.ClearMessages();
+            foreach (var databaseInfo in SelectedExecutionScriptInfo.DatabasesInfo)
+            {
+                if (!selectedDatabaseNames.Contains(databaseInfo.DatabaseName)) continue;
+
+                if (databaseInfo.Response != null)
+                {
+                    if (!string.IsNullOrEmpty(databaseInfo.Response.MessagesText))
+                    {
+                        if (databaseInfo.Status == ExecutionStatus.Error)
+                        {
+                            outputMessagesResults.AppendError(databaseInfo.Response.MessagesText);
+                        }
+                        else
+                        {
+                            outputMessagesResults.AppendInfo(databaseInfo.Response.MessagesText);
+                        }
+                    }
+                }
+            }
+
+            // Filter result grids by selected databases
+            var filter = selectedDatabaseNames.Count == 0
+                ? "1=0"
+                : string.Join(" OR ", selectedDatabaseNames.Select(n => $"DatabaseName = '{n.Replace("'", "''")}'"));
+
+            foreach (TabPage tab in tabControlMessagesAndResults.TabPages)
+            {
+                foreach (Control c in tab.Controls)
+                {
+                    if (c is DataGridView dgv && dgv.DataSource is BindingSource bs)
+                    {
+                        bs.Filter = filter;
+                    }
+                }
+            }
         }
 
 
@@ -281,6 +308,8 @@ namespace SQLMultiScript.UI.Forms
 
         private void ExecutionService_ErrorOccurred(ExecutionScriptInfo arg1, ExecutionDatabaseInfo arg2, Exception arg3)
         {
+            if (!arg2.Selected) return;
+
             var prefix = $"[{arg2.Database.DatabaseName}]";
             do
             {
@@ -305,10 +334,16 @@ namespace SQLMultiScript.UI.Forms
             tabControlMessagesAndResults.TabPages.Add(tabResult);
 
             tabResult.Controls.Add(DataGridViewFactory.CreateToResult(table));
+
+            // Auto-switch to the first result tab (index 0 is Messages)
+            if (tabControlMessagesAndResults.TabCount == 2)
+                tabControlMessagesAndResults.SelectedTab = tabResult;
         }
 
         private void ExecutionService_InfoMessageRecived(ExecutionScriptInfo scriptInfo, ExecutionDatabaseInfo databaseInfo, string message)
         {
+            if (!databaseInfo.Selected) return;
+
             outputMessagesResults.AppendInfo(message);
         }
 
@@ -501,6 +536,20 @@ namespace SQLMultiScript.UI.Forms
 
             // Checkbox with select-all header
             dataGridViewDatabasesResults.AddCheckBoxColumnWithSelectAll(nameof(Database.Selected));
+
+            // Subscribe to individual checkbox changes to refresh messages/results
+            dataGridViewDatabasesResults.CellValueChanged += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && dataGridViewDatabasesResults.Columns[e.ColumnIndex] is DataGridViewCheckBoxColumn)
+                    RefreshMessagesAndResults();
+            };
+
+            // Subscribe to header "select all" toggle
+            var headerCell = dataGridViewDatabasesResults.Columns[0].HeaderCell as DataGridViewCheckBoxHeaderCell;
+            if (headerCell != null)
+            {
+                headerCell.CheckedChanged += () => RefreshMessagesAndResults();
+            }
 
             // Database name column
             var colStatus = new DataGridViewImageColumn

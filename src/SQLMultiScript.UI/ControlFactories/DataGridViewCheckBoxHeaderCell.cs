@@ -68,6 +68,8 @@ namespace SQLMultiScript.UI.ControlFactories
             base.OnMouseClick(e);
         }
 
+        public event Action CheckedChanged;
+
         private void ToggleAllCheckBoxes()
         {
             if (DataGridView == null) return;
@@ -104,6 +106,8 @@ namespace SQLMultiScript.UI.ControlFactories
             {
                 _isToggling = false;
             }
+
+            CheckedChanged?.Invoke();
         }
 
         /// <summary>

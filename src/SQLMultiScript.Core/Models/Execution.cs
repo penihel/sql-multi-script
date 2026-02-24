@@ -31,6 +31,11 @@ namespace SQLMultiScript.Core.Models
         public bool Selected
         {
             get => Database?.Selected ?? false;
+            set
+            {
+                if (Database != null)
+                    Database.Selected = value;
+            }
         }
 
         public string DatabaseName
